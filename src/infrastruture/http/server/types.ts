@@ -20,4 +20,4 @@ type InferHttpParameterType<T extends HttpParameterType> = T extends "string"
 		? number
 		: any;
 
-export type AnyEndpoint = Endpoint<HttpMethod, string>;
+export type AnyEndpoint = Endpoint<HttpMethod, string, any, any, any, any>;

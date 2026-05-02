@@ -1,3 +1,4 @@
+import health from "./infrastruture/http/adapters/health";
 import Server from "./infrastruture/http/server";
 
 class Main {
@@ -11,7 +12,7 @@ class Main {
 	async start() {
 		const server = new Server();
 
-		server.register((await import("./infrastruture/http/health")).default);
+		server.register(health);
 
 		await server.start();
 	}

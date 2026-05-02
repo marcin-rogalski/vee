@@ -1,5 +1,5 @@
 import z from "zod";
-import Endpoint from "./server/endpoint";
+import Endpoint from "../server/endpoint";
 
 const health = new Endpoint(
 	"GET",

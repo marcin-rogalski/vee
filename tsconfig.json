@@ -38,6 +38,14 @@
 		"isolatedModules": true,
 		"noUncheckedSideEffectImports": true,
 		"moduleDetection": "force",
-		"skipLibCheck": true
-	}
+		"skipLibCheck": true,
+
+		// Path aliases
+		"paths": {
+			"@domain/*": ["./src/domain/*"],
+			"@application/*": ["./src/application/*"],
+			"@infrastructure/*": ["./src/infrastructure/*"]
+		}
+	},
+
 }
