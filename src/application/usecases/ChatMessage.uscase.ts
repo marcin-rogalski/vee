@@ -1,0 +1,96 @@
+import type ChatEvent from "@application/dto/ChatEvent.dto";
+import type ChatContextManagerPort from "@application/ports/ChatContextManager.port";
+import type ChatToolManagerPort from "@application/ports/ChatToolManager.port";
+import type ModelPort from "@application/ports/Model.port";
+
+class ChatMessageUseCase {
+	constructor(
+		readonly contextManager: ChatContextManagerPort,
+		readonly toolManager: ChatToolManagerPort,
+	) {}
+
+	// todo: fix the loop to properly handle tool calls and errors
+	async *execute(
+		sessionId: string,
+		prompt: string,
+		model: ModelPort,
+	): AsyncGenerator<ChatEvent> {
+		const tools = await this.toolManager.getTools();
+		const context = await this.contextManager.getContext(sessionId);
+
+		context.startTurn(prompt);
+
+		let done = false;
+		while (!done) {
+			const tokens: string[] = [];
+			const toolCalls: PendingToolCall[] = [];
+			for await (const event of model.streamResponse(context.entries, tools)) {
+				yield event;
+
+				if (event.type === "token") {
+					tokens.push(event.data.content);
+				}
+
+				if (event.type === "tool-call") {
+					toolCalls.push({
+						id: event.data.id,
+						toolName: event.data.name,
+						toolArguments: event.data.arguments,
+						ts: Date.now(),
+					});
+				}
+			}
+
+			if (tokens.length) {
+				await context.push({
+					author: "assistant",
+					content: tokens.join(""),
+					ts: Date.now(),
+				});
+			}
+
+			if (toolCalls.length) {
+				await context.push(
+					...toolCalls.map(({ id, toolName, toolArguments, ts }) => ({
+						author: "tool-call" as const,
+						id,
+						name: toolName,
+						arguments: toolArguments,
+						ts,
+					})),
+				);
+
+				for (const { id, toolName, toolArguments } of toolCalls) {
+					const toolResult = await this.toolManager.executeTool(
+						toolName,
+						toolArguments,
+					);
+
+					yield {
+						type: "tool-response",
+						data: { toolCallId: id, result: toolResult },
+					};
+					await context.push({
+						author: "tool-result",
+						id,
+						result: toolResult,
+						ts: Date.now(),
+					});
+				}
+			} else {
+				done = true;
+			}
+		}
+
+		context.commitTurn();
+	}
+}
+
+export default ChatMessageUseCase;
+
+type PendingToolCall = {
+	id: string;
+	toolName: string;
+	toolArguments: object;
+	ts: number;
+};

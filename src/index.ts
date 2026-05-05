@@ -1,21 +1,18 @@
-import health from "./infrastruture/http/adapters/health";
-import Server from "./infrastruture/http/server";
+import Health from "./infrastructure/http/adapters/Health.endpoint";
+import Server from "./infrastructure/http/server";
 
-class Main {
-	constructor() {
-		this.start().catch((error) => {
-			console.error("An error occurred during startup:", error);
-			process.exit(1);
-		});
-	}
+async function start() {
+	const server = new Server();
 
-	async start() {
-		const server = new Server();
+	// todo: implement ChatSessionRepositoryPort, ConfigRepositoryPort, ChatToolManagerPort
+	// todo: wire OpenAiModelAdapter + ChatContextManager + UserMessageEndpoint
 
-		server.register(health);
+	server.register(Health);
 
-		await server.start();
-	}
+	await server.start();
 }
 
-export default new Main().start();
+start().catch((error) => {
+	console.error("Startup error:", error);
+	process.exit(1);
+});

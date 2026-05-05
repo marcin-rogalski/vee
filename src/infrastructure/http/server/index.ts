@@ -6,14 +6,15 @@ export default class Server {
 	private endpoints: AnyEndpoint[] = [];
 
 	constructor(readonly port: number = 3000) {
-		//
+		this.express.use(express.json());
 	}
 
 	register(endpoint: AnyEndpoint) {
 		this.endpoints.push(endpoint);
+		const expressPath = endpoint.path.replace(/\{(\w+)(?::\w+)?\}/g, ":$1");
 		this.express[endpoint.method.toLowerCase() as keyof typeof this.express](
-			endpoint.path,
-			...endpoint.handlers,
+			expressPath,
+			...endpoint.toHandlers(),
 		);
 	}
 

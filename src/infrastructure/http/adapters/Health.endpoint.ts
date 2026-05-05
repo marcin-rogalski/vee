@@ -1,13 +1,9 @@
 import z from "zod";
 import Endpoint from "../server/endpoint";
 
-const health = new Endpoint(
+export default Endpoint.create(
 	"GET",
 	"/health",
 	{ response: z.object({ status: z.string() }) },
-	(_req, res) => {
-		res.json({ status: "ok" });
-	},
+	() => ({ status: "ok" }),
 );
-
-export default health;
