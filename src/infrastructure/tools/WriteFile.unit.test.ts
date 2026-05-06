@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import WriteFileTool from "./WriteFile.tool";
+import WriteFileTool from "./WriteFile.adapter";
 
 function makeFs() {
 	return {
@@ -14,7 +14,10 @@ describe("WriteFileTool", () => {
 		const fs = makeFs();
 		const tool = new WriteFileTool(fs);
 
-		const result = await tool.execute({ path: "/out/file.txt", content: "data" });
+		const result = await tool.execute({
+			path: "/out/file.txt",
+			content: "data",
+		});
 
 		expect(fs.mkdir).toHaveBeenCalledWith("/out", { recursive: true });
 		expect(fs.writeFile).toHaveBeenCalledWith("/out/file.txt", "data");
@@ -26,7 +29,10 @@ describe("WriteFileTool", () => {
 		fs.writeFile.mockRejectedValue(new Error("EACCES"));
 		const tool = new WriteFileTool(fs);
 
-		const result = await tool.execute({ path: "/out/file.txt", content: "data" });
+		const result = await tool.execute({
+			path: "/out/file.txt",
+			content: "data",
+		});
 
 		expect(result).toMatch("Error writing file: EACCES");
 	});

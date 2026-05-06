@@ -5,7 +5,14 @@ vi.mock("tiktoken", () => ({
 	get_encoding: () => ({ encode: (s: string) => new Uint32Array(s.length) }),
 }));
 
-const config = { systemPrompt: "you are helpful" };
+const config = {
+	systemPrompt: "you are helpful",
+	server: { port: 3000 },
+	mongo: { uri: "mongodb://localhost:27017", database: "vee" },
+	tokenLimit: 1000,
+	models: [],
+};
+
 const repo = {
 	create: vi.fn(),
 	get: vi.fn().mockResolvedValue({ id: "s1", history: [] }),
@@ -13,7 +20,7 @@ const repo = {
 };
 
 function make() {
-	return new ChatContextManager(config, repo, 1000);
+	return new ChatContextManager(config, repo);
 }
 
 afterEach(() => vi.clearAllMocks());

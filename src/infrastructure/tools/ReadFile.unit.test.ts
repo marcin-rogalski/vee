@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import ReadFileTool from "./ReadFile.tool";
+import ReadFileTool from "./ReadFile.adapter";
 
 function makeFs() {
 	return {

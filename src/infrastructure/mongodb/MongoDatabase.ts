@@ -12,7 +12,9 @@ class MongoDatabase {
 		private readonly dbName: string,
 	) {}
 
-	register<T extends Document & { id: string }>(...repos: MongoRepository<T>[]): this {
+	register<T extends Document & { id: string }>(
+		...repos: MongoRepository<T>[]
+	): this {
 		// biome-ignore lint/suspicious/noExplicitAny: Collection<T> is invariant; safe because only name and initialize are used
 		this.repos.push(...(repos as unknown as MongoRepository<any>[]));
 		return this;
@@ -35,6 +37,14 @@ class MongoDatabase {
 
 		this.client = undefined;
 		this.db = undefined;
+	}
+
+	async ping(): Promise<void> {
+		if (!this.db) {
+			throw new Error("Database not connected");
+		}
+
+		await this.db.admin().ping();
 	}
 }
 

@@ -53,7 +53,7 @@ export default class Endpoint {
 			body: ExtractBody<TSchemas>,
 			query: ExtractQuery<TSchemas>,
 			signal: AbortSignal,
-		): ExtractOutput<TSchemas>;
+		): ExtractOutput<TSchemas> | Promise<ExtractOutput<TSchemas>>;
 	} {
 		abstract class TypedEndpoint extends Endpoint {
 			constructor() {
@@ -69,7 +69,7 @@ export default class Endpoint {
 				body: ExtractBody<TSchemas>,
 				query: ExtractQuery<TSchemas>,
 				signal: AbortSignal,
-			): ExtractOutput<TSchemas>;
+			): ExtractOutput<TSchemas> | Promise<ExtractOutput<TSchemas>>;
 		}
 		return TypedEndpoint as any;
 	}
@@ -131,12 +131,16 @@ export default class Endpoint {
 
 			req.on("close", () => controller.abort());
 
-			const output = this._handler(
+			let output = this._handler(
 				req.params,
 				req.body,
 				req.query,
 				controller.signal,
 			);
+
+			if (output instanceof Promise) {
+				output = await output;
+			}
 
 			if (output === undefined || output === null) {
 				res.sendStatus(204);

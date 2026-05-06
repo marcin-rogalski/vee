@@ -1,6 +1,9 @@
 import type ChatEntry from "@application/dto/ChatEntry.dto";
 import type ChatEvent from "@application/dto/ChatEvent.dto";
 import type ChatContextPort from "@application/ports/ChatContext.port";
+import type ChatContextManagerPort from "@application/ports/ChatContextManager.port";
+import type ChatToolManagerPort from "@application/ports/ChatToolManager.port";
+import type ModelPort from "@application/ports/Model.port";
 import { describe, expect, it, vi } from "vitest";
 import ChatMessageUseCase from "./ChatMessage.usecase";
 
@@ -23,28 +26,41 @@ function fakeContext(): ChatContextPort & { pushed: ChatEntry[] } {
 	};
 }
 
-function fakeModel(calls: ModelEvent[][]) {
+function fakeModel(calls: ModelEvent[][]): ModelPort {
 	let i = 0;
-	return { streamResponse: vi.fn(() => stream(...(calls[i++] ?? []))) };
+	return {
+		streamResponse: vi.fn(() => stream(...(calls[i++] ?? []))),
+	} as unknown as ModelPort;
 }
 
-function fakeContextManager(ctx: ChatContextPort) {
-	return { getContext: vi.fn().mockResolvedValue(ctx) };
+function fakeContextManager(ctx: ChatContextPort): ChatContextManagerPort {
+	return {
+		getContext: vi.fn().mockResolvedValue(ctx),
+	} as unknown as ChatContextManagerPort;
 }
 
-function fakeToolManager(result = "ok") {
+function fakeToolManager(result = "ok"): ChatToolManagerPort {
 	return {
 		getTools: vi.fn().mockResolvedValue([]),
 		executeTool: vi.fn().mockResolvedValue(result),
-	};
+	} as unknown as ChatToolManagerPort;
 }
 
 describe("ChatMessageUseCase", () => {
+	it("throws when model is null", async () => {
+		const useCase = new ChatMessageUseCase(
+			fakeContextManager(fakeContext()),
+			fakeToolManager(),
+		);
+		const gen = useCase.execute("s1", "hi", null);
+		await expect(gen.next()).rejects.toThrow("No active model configured");
+	});
+
 	it("yields token events and pushes assistant message", async () => {
 		const ctx = fakeContext();
 		const useCase = new ChatMessageUseCase(
-			fakeContextManager(ctx) as any,
-			fakeToolManager() as any,
+			fakeContextManager(ctx),
+			fakeToolManager(),
 		);
 		const model = fakeModel([
 			[
@@ -55,8 +71,7 @@ describe("ChatMessageUseCase", () => {
 		]);
 
 		const events = [];
-		for await (const e of useCase.execute("s1", "hi", model as any))
-			events.push(e);
+		for await (const e of useCase.execute("s1", "hi", model)) events.push(e);
 
 		expect(events).toContainEqual({ type: "token", data: { content: "hel" } });
 		expect(ctx.push).toHaveBeenCalledWith(
@@ -69,8 +84,8 @@ describe("ChatMessageUseCase", () => {
 		const ctx = fakeContext();
 		const toolManager = fakeToolManager("tool-result");
 		const useCase = new ChatMessageUseCase(
-			fakeContextManager(ctx) as any,
-			toolManager as any,
+			fakeContextManager(ctx),
+			toolManager,
 		);
 		const model = fakeModel([
 			[
@@ -84,15 +99,16 @@ describe("ChatMessageUseCase", () => {
 		]);
 
 		const events = [];
-		for await (const e of useCase.execute("s1", "hi", model as any))
-			events.push(e);
+		for await (const e of useCase.execute("s1", "hi", model)) events.push(e);
 
 		expect(toolManager.executeTool).toHaveBeenCalledWith("myTool", {});
 		expect(events).toContainEqual({
 			type: "tool-response",
 			data: { toolCallId: "tc1", result: "tool-result" },
 		});
-		expect(model.streamResponse).toHaveBeenCalledTimes(2);
+		expect(
+			(model.streamResponse as ReturnType<typeof vi.fn>).mock.calls,
+		).toHaveLength(2);
 		expect(ctx.commitTurn).toHaveBeenCalled();
 	});
 });

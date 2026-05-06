@@ -44,7 +44,7 @@ class UserMessageEndpoint extends Endpoint.typed(
 	constructor(
 		contextManager: ChatContextManagerPort,
 		toolManager: ChatToolManagerPort,
-		private readonly model: ModelPort,
+		private readonly model: ModelPort | null,
 	) {
 		super();
 		this.useCase = new ChatMessageUseCase(contextManager, toolManager);

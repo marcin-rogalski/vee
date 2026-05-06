@@ -1,7 +1,7 @@
+import type { AppConfig } from "@application/ports/AppConfigRepository.port";
 import type ChatContextPort from "@application/ports/ChatContext.port";
 import type ChatContextManagerPort from "@application/ports/ChatContextManager.port";
 import type ChatSessionRepositoryPort from "@application/ports/ChatSessionRepository.port";
-import type ConfigRepositoryPort from "@application/ports/ConfigRepository.port";
 import RollingWindowContext from "@application/services/RollingWindowContext";
 
 const TTL_MS = 15 * 60 * 1000;
@@ -14,9 +14,8 @@ class ChatContextManager implements ChatContextManagerPort {
 	private readonly evictionTimer: ReturnType<typeof setInterval>;
 
 	constructor(
-		readonly configRepository: ConfigRepositoryPort,
+		readonly config: AppConfig,
 		readonly sessionRepository: ChatSessionRepositoryPort,
-		readonly tokenLimit: number,
 	) {
 		this.evictionTimer = setInterval(() => this.evict(), EVICTION_INTERVAL_MS);
 
@@ -32,14 +31,13 @@ class ChatContextManager implements ChatContextManagerPort {
 			return cacheEntry.context;
 		}
 
-		const systemPrompt = this.configRepository.systemPrompt;
 		const session = await this.sessionRepository.get(sessionId);
 
 		const context = new RollingWindowContext(
 			sessionId,
-			systemPrompt,
+			this.config.systemPrompt,
 			session.history,
-			this.tokenLimit,
+			this.config.tokenLimit,
 			this.sessionRepository,
 		);
 

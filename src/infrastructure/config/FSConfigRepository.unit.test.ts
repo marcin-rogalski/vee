@@ -1,17 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import FSConfigRepository from "./FSConfigRepository.adapter";
 
+const ACTIVE_MODEL = {
+	id: "gpt-4o",
+	type: "openai" as const,
+	apiKey: "sk-file-key",
+	baseUrl: "http://localhost:1234/v1",
+	name: "gpt-4o",
+	active: true as const,
+};
+
 const VALID_CONFIG = {
 	systemPrompt: "custom prompt",
 	server: { port: 8080 },
 	mongo: { uri: "mongodb://mongo:27017", database: "mydb" },
 	tokenLimit: 8192,
-	model: {
-		type: "openai" as const,
-		apiKey: "sk-file-key",
-		baseUrl: "http://localhost:1234/v1",
-		name: "gpt-4o",
-	},
+	models: [ACTIVE_MODEL],
 };
 
 function makeFs(fileContent?: string) {
@@ -53,28 +57,46 @@ describe("FSConfigRepository.load", () => {
 
 		const config = await repo.load();
 
-		expect(config.model.apiKey).toBe("sk-env-key");
+		const [model] = config.models;
+		expect(model?.apiKey).toBe("sk-env-key");
+		expect(model?.active).toBe(true);
 		expect(config.systemPrompt).toBe("env prompt");
 		expect(config.mongo.uri).toBe("mongodb://localhost:27017");
 		expect(config.tokenLimit).toBe(4096);
 		expect(fs.writeFile).toHaveBeenCalledOnce();
 	});
 
-	it("uses defaults when neither file nor env present (except apiKey)", async () => {
-		process.env.OPENAI_API_KEY = "sk-required";
+	it("uses defaults when neither file nor env present", async () => {
 		const config = await new FSConfigRepository(makeFs()).load();
 
 		expect(config.systemPrompt).toBe("You are a helpful assistant.");
 		expect(config.server.port).toBe(3000);
-		expect(config.mongo).toEqual({ uri: "mongodb://localhost:27017", database: "vee" });
+		expect(config.mongo).toEqual({
+			uri: "mongodb://localhost:27017",
+			database: "vee",
+		});
 		expect(config.tokenLimit).toBe(4096);
-		expect(config.model.baseUrl).toBe("http://localhost:1234/v1");
-		expect(config.model.name).toBe("local-model");
+		expect(config.models).toEqual([]);
 	});
 
-	it("throws when openai.apiKey absent from both file and env", async () => {
-		await expect(new FSConfigRepository(makeFs()).load()).rejects.toThrow(
-			"OPENAI_API_KEY is required",
-		);
+	it("produces an active model from env when OPENAI_API_KEY is set", async () => {
+		process.env.OPENAI_API_KEY = "sk-required";
+		const config = await new FSConfigRepository(makeFs()).load();
+
+		expect(config.models).toHaveLength(1);
+		expect(config.models[0]).toMatchObject({
+			active: true,
+			apiKey: "sk-required",
+		});
+	});
+
+	it("throws when more than one model is active", async () => {
+		const twoActive = {
+			...VALID_CONFIG,
+			models: [ACTIVE_MODEL, { ...ACTIVE_MODEL, id: "other" }],
+		};
+		await expect(
+			new FSConfigRepository(makeFs(JSON.stringify(twoActive))).load(),
+		).rejects.toThrow("At most one model can be active");
 	});
 });

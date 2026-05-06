@@ -9,12 +9,14 @@ class ChatMessageUseCase {
 		readonly toolManager: ChatToolManagerPort,
 	) {}
 
-	// todo: fix the loop to properly handle tool calls and errors
 	async *execute(
 		sessionId: string,
 		prompt: string,
-		model: ModelPort,
+		model: ModelPort | null,
 	): AsyncGenerator<ChatEvent> {
+		if (!model) {
+			throw new Error("No active model configured");
+		}
 		const tools = await this.toolManager.getTools();
 		const context = await this.contextManager.getContext(sessionId);
 
