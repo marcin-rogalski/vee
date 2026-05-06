@@ -1,6 +1,6 @@
 interface ChatToolManagerPort {
 	getTools(): Promise<ToolDefinition[]>;
-	executeTool(name: string, args: object): Promise<string>;
+	executeTool(name: string, args: Record<string, unknown>): Promise<string>;
 }
 
 export default ChatToolManagerPort;

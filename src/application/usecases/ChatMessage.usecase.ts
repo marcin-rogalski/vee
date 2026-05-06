@@ -91,6 +91,6 @@ export default ChatMessageUseCase;
 type PendingToolCall = {
 	id: string;
 	toolName: string;
-	toolArguments: object;
+	toolArguments: Record<string, unknown>;
 	ts: number;
 };

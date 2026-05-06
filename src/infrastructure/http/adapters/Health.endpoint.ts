@@ -1,9 +1,12 @@
 import z from "zod";
 import Endpoint from "../server/endpoint";
 
-export default Endpoint.create(
-	"GET",
-	"/health",
-	{ response: z.object({ status: z.string() }) },
-	() => ({ status: "ok" }),
-);
+class HealthEndpoint extends Endpoint.typed("GET", "/health", {
+	response: z.object({ status: z.string() }),
+}) {
+	handle() {
+		return { status: "ok" };
+	}
+}
+
+export default HealthEndpoint;

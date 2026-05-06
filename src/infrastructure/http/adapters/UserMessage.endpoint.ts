@@ -1,7 +1,7 @@
 import type ChatContextManagerPort from "@application/ports/ChatContextManager.port";
 import type ChatToolManagerPort from "@application/ports/ChatToolManager.port";
 import type ModelPort from "@application/ports/Model.port";
-import ChatMessageUseCase from "@application/usecases/ChatMessage.uscase";
+import ChatMessageUseCase from "@application/usecases/ChatMessage.usecase";
 import z from "zod";
 import Endpoint from "../server/endpoint";
 
@@ -34,9 +34,11 @@ const schemas = {
 	]),
 };
 
-const Base = Endpoint.typed("POST", "/{session:string}/message", schemas);
-
-class UserMessageEndpoint extends Base {
+class UserMessageEndpoint extends Endpoint.typed(
+	"POST",
+	"/{session:string}/message",
+	schemas,
+) {
 	private readonly useCase: ChatMessageUseCase;
 
 	constructor(

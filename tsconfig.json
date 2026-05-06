@@ -9,7 +9,7 @@
 		// See also https://aka.ms/tsconfig/module
 		"module": "commonjs",
 		"moduleResolution": "bundler",
-		"verbatimModuleSyntax":false,
+		"verbatimModuleSyntax": false,
 		"target": "esnext",
 		"lib": ["esnext"],
 		"types": ["node"],
@@ -41,11 +41,12 @@
 		"skipLibCheck": true,
 
 		// Path aliases
+		// (vitest.config.ts excluded — uses import.meta which requires esnext module)
 		"paths": {
 			"@domain/*": ["./src/domain/*"],
 			"@application/*": ["./src/application/*"],
 			"@infrastructure/*": ["./src/infrastructure/*"]
 		}
 	},
-
+	"exclude": ["vitest.config.ts"]
 }

@@ -19,6 +19,9 @@ class ChatContextManager implements ChatContextManagerPort {
 		readonly tokenLimit: number,
 	) {
 		this.evictionTimer = setInterval(() => this.evict(), EVICTION_INTERVAL_MS);
+
+		process.on("SIGINT", this.dispose.bind(this));
+		process.on("SIGTERM", this.dispose.bind(this));
 	}
 
 	async getContext(sessionId: string): Promise<ChatContextPort> {
@@ -41,6 +44,7 @@ class ChatContextManager implements ChatContextManagerPort {
 		);
 
 		this.cache.set(sessionId, { context, lastRead: Date.now() });
+
 		return context;
 	}
 

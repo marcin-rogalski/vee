@@ -1,7 +1,14 @@
 /** biome-ignore-all lint/complexity/noBannedTypes: usage of {} is intended here */
+/** biome-ignore-all lint/suspicious/noExplicitAny: usage of any is intneded here */
 import type { RequestHandler } from "express";
 import Zod from "zod";
-import type { ExtractBody, ExtractOutput, ExtractQuery, HttpMethod, HttpParameters } from "./types";
+import type {
+	ExtractBody,
+	ExtractOutput,
+	ExtractQuery,
+	HttpMethod,
+	HttpParameters,
+} from "./types";
 
 export default class Endpoint {
 	readonly method: HttpMethod;
@@ -52,7 +59,9 @@ export default class Endpoint {
 			constructor() {
 				// biome-ignore lint: instance must be captured before super() completes
 				let instance!: TypedEndpoint;
-				super(method, path, schemas, (...args: any[]) => (instance as any).handle(...args));
+				super(method, path, schemas, (...args: any[]) =>
+					(instance as any).handle(...args),
+				);
 				instance = this;
 			}
 			abstract handle(
@@ -143,8 +152,13 @@ export default class Endpoint {
 				res.setHeader("Cache-Control", "no-cache");
 				res.setHeader("Connection", "keep-alive");
 
-				for await (const event of output as unknown as AsyncIterable<{ type: string; data: unknown }>) {
-					res.write(`event: ${event.type}\ndata: ${JSON.stringify(event.data)}\n\n`);
+				for await (const event of output as unknown as AsyncIterable<{
+					type: string;
+					data: unknown;
+				}>) {
+					res.write(
+						`event: ${event.type}\ndata: ${JSON.stringify(event.data)}\n\n`,
+					);
 				}
 
 				res.end();
