@@ -11,6 +11,7 @@ import HealthEndpoint from "./infrastructure/http/adapters/Health.endpoint";
 import UserMessageEndpoint from "./infrastructure/http/adapters/UserMessage.endpoint";
 import Server from "./infrastructure/http/server";
 import OpenAiModelAdapter from "./infrastructure/llm/OpenAiModel.adapter";
+import ConsoleLoggerAdapter from "./infrastructure/logging/ConsoleLogger.adapter";
 import MongoDatabase from "./infrastructure/mongodb/MongoDatabase";
 import MongoSessionRepository from "./infrastructure/mongodb/MongoSessionRepository.adapter";
 import LocalToolManager from "./infrastructure/tools/LocalToolManager.adapter";
@@ -40,11 +41,13 @@ async function start() {
 	const toolManager = new LocalToolManager();
 
 	// driving adapters
-	const server = new Server(config.server.port);
+	const logger = new ConsoleLoggerAdapter();
+	const server = new Server(config.server.port, logger);
 	const healthEndpoint = new HealthEndpoint();
 	const userMessageEndpoint = new UserMessageEndpoint(
 		contextManager,
 		toolManager,
+		logger,
 		model,
 	);
 	const getConfigEndpoint = new GetConfigEndpoint(
@@ -72,6 +75,11 @@ async function start() {
 	// start
 	await db.connect();
 	await server.start();
+	logger.info("app.start", {
+		port: config.server.port,
+		mongoUri: config.mongo.uri.replace(/(\/\/)[^@]*@/, "$1***@"),
+		activeModel: activeModelConfig?.name ?? "none",
+	});
 }
 
 start().catch((error) => {

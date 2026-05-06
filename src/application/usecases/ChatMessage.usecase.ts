@@ -1,12 +1,14 @@
 import type ChatEvent from "@application/dto/ChatEvent.dto";
 import type ChatContextManagerPort from "@application/ports/ChatContextManager.port";
 import type ChatToolManagerPort from "@application/ports/ChatToolManager.port";
+import type LoggerPort from "@application/ports/Logger.port";
 import type ModelPort from "@application/ports/Model.port";
 
 class ChatMessageUseCase {
 	constructor(
 		readonly contextManager: ChatContextManagerPort,
 		readonly toolManager: ChatToolManagerPort,
+		readonly logger: LoggerPort,
 	) {}
 
 	async *execute(
@@ -24,13 +26,13 @@ class ChatMessageUseCase {
 
 		let done = false;
 		while (!done) {
-			const tokens: string[] = [];
+			let chunkText = "";
 			const toolCalls: PendingToolCall[] = [];
 			for await (const event of model.streamResponse(context.entries, tools)) {
 				yield event;
 
 				if (event.type === "token") {
-					tokens.push(event.data.content);
+					chunkText += event.data.content;
 				}
 
 				if (event.type === "tool-call") {
@@ -43,10 +45,10 @@ class ChatMessageUseCase {
 				}
 			}
 
-			if (tokens.length) {
+			if (chunkText) {
 				await context.push({
 					author: "assistant",
-					content: tokens.join(""),
+					content: chunkText,
 					ts: Date.now(),
 				});
 			}
@@ -84,7 +86,12 @@ class ChatMessageUseCase {
 			}
 		}
 
+		const stats = context.getStats();
 		context.commitTurn();
+		this.logger.info("chat.turn", {
+			...stats,
+			tokens: `${stats.tokenUsage} (${stats.tokenPct})`,
+		});
 	}
 }
 

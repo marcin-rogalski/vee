@@ -6,3 +6,4 @@
 | hexagonal-alignment | implemented | Apply .port/.dto/.usecase/.adapter/.endpoint file suffixes; extract DTOs; sealed Endpoint with typed()/create(). | f3140b8 |
 | infrastructure-ports | implemented | MongoDB session repository, file+env config adapter, no-op tool manager stub, composition root wiring. | 61f79b4 |
 | model-selection-config-api | ready-to-implement | Models array in config with active flag; composition root wires active adapter; GET /config and PATCH /config endpoints | 61f79b4 |
+| telemetry-and-context-logging | implemented | LoggerPort in application layer; ConsoleLogger adapter; chat.turn + http.request + app.start log entries; token stats on context | ffff3cf |

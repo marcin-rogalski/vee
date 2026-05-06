@@ -1,5 +1,6 @@
 import type ChatEntry from "@application/dto/ChatEntry.dto";
 import type ChatContextPort from "@application/ports/ChatContext.port";
+import type { ContextStats } from "@application/ports/ChatContext.port";
 import type SessionRepositoryPort from "@application/ports/ChatSessionRepository.port";
 import { get_encoding } from "tiktoken";
 
@@ -47,6 +48,43 @@ class RollingWindowContext implements ChatContextPort {
 		this.userEntry = null;
 		this.currentTurn.length = 0;
 		this._entries = this.computeWindow();
+	}
+
+	getStats(): ContextStats {
+		const tokensUsed = this._entries.reduce(
+			(sum, e) => sum + this.countTokens(e),
+			0,
+		);
+		const promptSnippet =
+			this.userEntry?.author === "user"
+				? this.snippet(this.userEntry.content)
+				: undefined;
+		const lastAssistant = [...this.currentTurn]
+			.reverse()
+			.find(
+				(entry): entry is Extract<ChatEntry, { content: string; ts: number }> =>
+					entry.author === "assistant",
+			);
+		const responseSnippet = lastAssistant
+			? lastAssistant.content
+					.split("\n")
+					.filter((l) => l)
+					.slice(0, 2)
+					.map((l) => this.snippet(l))
+					.join("\n")
+			: undefined;
+		return {
+			sessionId: this.sessionId,
+			tokensUsed,
+			tokenUsage: `${tokensUsed}/${this.tokenLimit}`,
+			tokenPct: `${Math.round((tokensUsed / this.tokenLimit) * 100)}%`,
+			promptSnippet,
+			responseSnippet,
+		};
+	}
+
+	private snippet(text: string, max = 90): string {
+		return text.length > max ? `${text.slice(0, max)}…` : text;
 	}
 
 	private computeWindow(): ChatEntry[] {

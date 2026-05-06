@@ -1,4 +1,6 @@
-import appConfigSchema, { appConfigBaseSchema } from "@application/schemas/AppConfig.schema";
+import appConfigSchema, {
+	appConfigBaseSchema,
+} from "@application/schemas/AppConfig.schema";
 import type GetConfigUseCase from "@application/usecases/GetConfig.usecase";
 import type UpdateConfigUseCase from "@application/usecases/UpdateConfig.usecase";
 import Endpoint from "../server/endpoint";

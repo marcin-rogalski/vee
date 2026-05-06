@@ -22,6 +22,12 @@ function fakeContext(): ChatContextPort & { pushed: ChatEntry[] } {
 		}),
 		startTurn: vi.fn(),
 		commitTurn: vi.fn(),
+		getStats: vi.fn(() => ({
+			sessionId: "test",
+			tokensUsed: 0,
+			tokenUsage: "0/4096",
+			tokenPct: "0%",
+		})),
 		pushed,
 	};
 }
@@ -46,11 +52,21 @@ function fakeToolManager(result = "ok"): ChatToolManagerPort {
 	} as unknown as ChatToolManagerPort;
 }
 
+function fakeLogger() {
+	return {
+		info: vi.fn(),
+		warn: vi.fn(),
+		error: vi.fn(),
+		debug: vi.fn(),
+	};
+}
+
 describe("ChatMessageUseCase", () => {
 	it("throws when model is null", async () => {
 		const useCase = new ChatMessageUseCase(
 			fakeContextManager(fakeContext()),
 			fakeToolManager(),
+			fakeLogger(),
 		);
 		const gen = useCase.execute("s1", "hi", null);
 		await expect(gen.next()).rejects.toThrow("No active model configured");
@@ -61,6 +77,7 @@ describe("ChatMessageUseCase", () => {
 		const useCase = new ChatMessageUseCase(
 			fakeContextManager(ctx),
 			fakeToolManager(),
+			fakeLogger(),
 		);
 		const model = fakeModel([
 			[
@@ -86,6 +103,7 @@ describe("ChatMessageUseCase", () => {
 		const useCase = new ChatMessageUseCase(
 			fakeContextManager(ctx),
 			toolManager,
+			fakeLogger(),
 		);
 		const model = fakeModel([
 			[

@@ -1,5 +1,6 @@
 import type ChatContextManagerPort from "@application/ports/ChatContextManager.port";
 import type ChatToolManagerPort from "@application/ports/ChatToolManager.port";
+import type LoggerPort from "@application/ports/Logger.port";
 import type ModelPort from "@application/ports/Model.port";
 import ChatMessageUseCase from "@application/usecases/ChatMessage.usecase";
 import z from "zod";
@@ -44,10 +45,11 @@ class UserMessageEndpoint extends Endpoint.typed(
 	constructor(
 		contextManager: ChatContextManagerPort,
 		toolManager: ChatToolManagerPort,
+		logger: LoggerPort,
 		private readonly model: ModelPort | null,
 	) {
 		super();
-		this.useCase = new ChatMessageUseCase(contextManager, toolManager);
+		this.useCase = new ChatMessageUseCase(contextManager, toolManager, logger);
 	}
 
 	handle(params: { session: string }, body: { message: string }) {
