@@ -30,6 +30,18 @@ export function createClient(baseUrl: string) {
       return res.json() as Promise<AppConfig>;
     },
 
+    async listSessions(): Promise<string[]> {
+      const res = await fetch(`${baseUrl}/sessions`);
+      const json = (await res.json()) as { sessions: string[] };
+      return json.sessions;
+    },
+
+    async createSession(): Promise<string> {
+      const res = await fetch(`${baseUrl}/sessions`, { method: "POST" });
+      const json = (await res.json()) as { id: string };
+      return json.id;
+    },
+
     async patchConfig(partial: Partial<AppConfig>): Promise<AppConfig> {
       const res = await fetch(`${baseUrl}/config`, {
         method: "PATCH",

@@ -1,7 +1,7 @@
 ---
 type: plan
 slug: cli-interactive
-status: draft
+status: implemented
 created: 2026-05-07
 last_synced: b960dc8
 references:
@@ -68,43 +68,43 @@ Replace `create`+`update` on `SessionRepositoryPort` with a single `upsert` (aut
   - note: `GET /sessions` → `{ sessions: string[] }`; `POST /sessions` → calls `upsert({ history: [] })` → `{ id: string }`; both endpoints receive `sessionRepository` directly (no use-case wrapper needed at this scale)
   - test: `curl GET /sessions` returns `{ sessions: [] }`; `curl POST /sessions` returns `{ id: "<uuid>" }`
 
-- [ ] T6. CLI deps — add ink, remove commander
+- [x] T6. CLI deps — add ink, remove commander
   - files: `cli/package.json`, `cli/tsconfig.json`
   - depends on: —
   - note: add `ink`, `react`, `ink-select-input`, `ink-text-input`; add `@types/react`; remove `commander`; set `jsx: react-jsx` in tsconfig if not present
   - test: `cd cli && npm install && npx tsc --noEmit`
 
-- [ ] T7. CLI client — add `listSessions()` and `createSession()`
+- [x] T7. CLI client — add `listSessions()` and `createSession()`
   - files: `cli/src/client.ts`
   - depends on: T5, T6
   - note: `listSessions(): Promise<string[]>`; `createSession(): Promise<string>`; keep `streamMessage` and `getConfig`/`patchConfig`
   - test: type-checks
 
-- [ ] T8. CLI app shell + navigation
+- [x] T8. CLI app shell + navigation
   - files: `cli/src/index.ts`, `cli/src/App.tsx`
   - depends on: T6
   - note: `App` manages `screen` state: `'menu' | 'config' | 'sessions' | 'chat'`; top-level `render(<App />)`; remove all commander usage
   - test: `npm run start` shows a menu with at least Config / Chat options
 
-- [ ] T9. Config screen
+- [x] T9. Config screen
   - files: `cli/src/screens/ConfigScreen.tsx`
   - depends on: T7, T8
   - note: shows current config (active model, token limit); allows picking active model by id using `ink-select-input`; PATCHes on confirm; press Esc → back to menu
   - test: screen renders without crash; selecting a model calls patchConfig
 
-- [ ] T10. Session picker screen
+- [x] T10. Session picker screen
   - files: `cli/src/screens/SessionScreen.tsx`
   - depends on: T7, T8
   - note: fetches session list on mount; shows ids + "New session" option at top; on select calls `createSession()` if new, otherwise uses picked id; transitions to ChatScreen with chosen sessionId
   - test: screen renders session list fetched from server; selecting "New session" creates one
 
-- [ ] T11. Chat screen
+- [x] T11. Chat screen
   - files: `cli/src/screens/ChatScreen.tsx`
   - depends on: T7, T8
   - note: props: `sessionId`; shows `Session: <id>` header; renders conversation history (static entries + streaming tokens); text input at bottom; on submit calls `streamMessage`; status bar shows token usage from `done` event or context stats; Esc → session picker
   - test: sending a message streams tokens to screen; session id and token info visible
 
-- [ ] T12. Remove old CLI command files
+- [x] T12. Remove old CLI command files
   - files: `cli/src/commands/chat.ts`, `cli/src/commands/config.ts`
   - depends on: T9, T10, T11
   - note: delete both files; verify no imports remain

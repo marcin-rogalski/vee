@@ -17,7 +17,7 @@ class FSConfigRepository implements AppConfigRepositoryPort {
 			return appConfigSchema.parse(fileContent);
 		}
 
-		const config = this.fromEnv();
+		const config = this.getInitialConfig();
 		await this.writeConfig(config);
 
 		return config;
@@ -27,22 +27,7 @@ class FSConfigRepository implements AppConfigRepositoryPort {
 		await this.writeConfig(config);
 	}
 
-	private fromEnv(): AppConfig {
-		const apiKey = process.env.OPENAI_API_KEY;
-
-		const models = apiKey
-			? [
-					{
-						id: "default",
-						type: "openai" as const,
-						active: true as const,
-						apiKey,
-						baseUrl: process.env.OPENAI_BASE_URL,
-						name: process.env.OPENAI_MODEL,
-					},
-				]
-			: [];
-
+	private getInitialConfig(): AppConfig {
 		return appConfigSchema.parse({
 			systemPrompt: process.env.SYSTEM_PROMPT,
 			server: { port: process.env.PORT },
@@ -51,7 +36,7 @@ class FSConfigRepository implements AppConfigRepositoryPort {
 				database: process.env.MONGO_DB,
 			},
 			tokenLimit: process.env.TOKEN_LIMIT,
-			models,
+			models: [],
 		});
 	}
 

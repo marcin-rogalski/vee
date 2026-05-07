@@ -160,9 +160,7 @@ export default class Endpoint {
 					type: string;
 					data: unknown;
 				}>) {
-					res.write(
-						`event: ${event.type}\ndata: ${JSON.stringify(event.data)}\n\n`,
-					);
+					res.write(`data: ${JSON.stringify(event)}\n\n`);
 				}
 
 				res.end();

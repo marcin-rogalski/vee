@@ -22,22 +22,7 @@ class OpenAiModelAdapter implements ModelPort {
 		const stream = this.client.chat.completions.stream({
 			model: this.model,
 			tools: tools.map((tool) => ({ type: "function", function: tool })),
-			messages: context.map((entry) => {
-				if (entry.author === "tool-call") {
-					// todo: fold into the preceding assistant message as tool_calls[]
-					return { role: "assistant" as const, content: "" };
-				}
-
-				if (entry.author === "tool-result") {
-					return {
-						role: "tool" as const,
-						tool_call_id: entry.id,
-						content: entry.result,
-					};
-				}
-
-				return { role: entry.author, content: entry.content };
-			}),
+			messages: toOpenAiMessages(context),
 			stream: true,
 		});
 
@@ -85,3 +70,45 @@ class OpenAiModelAdapter implements ModelPort {
 }
 
 export default OpenAiModelAdapter;
+
+function toOpenAiMessages(
+	context: ChatEntry[],
+): OpenAI.ChatCompletionMessageParam[] {
+	const messages: OpenAI.ChatCompletionMessageParam[] = [];
+	let i = 0;
+
+	while (i < context.length) {
+		const entry = context[i] as ChatEntry;
+		if (entry.author === "tool-call") {
+			const toolCalls: OpenAI.ChatCompletionMessageToolCall[] = [];
+			while (
+				i < context.length &&
+				(context[i] as ChatEntry).author === "tool-call"
+			) {
+				const tc = context[i] as Extract<ChatEntry, { author: "tool-call" }>;
+				toolCalls.push({
+					id: tc.id,
+					type: "function",
+					function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
+				});
+				i++;
+			}
+			messages.push({
+				role: "assistant",
+				content: null,
+				tool_calls: toolCalls,
+			});
+		} else if (entry.author === "tool-result") {
+			messages.push({
+				role: "tool",
+				tool_call_id: entry.id,
+				content: entry.result,
+			});
+			i++;
+		} else {
+			messages.push({ role: entry.author, content: entry.content });
+			i++;
+		}
+	}
+	return messages;
+}

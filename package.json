@@ -14,7 +14,7 @@
 		"test": "vitest",
 		"start": "sh scripts/start.sh",
 		"stop": "sh scripts/stop.sh",
-		"cli": "cd cli && npx tsx src/index.ts"
+		"cli": "cd cli && npx tsx src/index.tsx"
 	},
 	"dependencies": {
 		"express": "^5.2.1",

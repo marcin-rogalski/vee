@@ -1,3 +1,5 @@
+import * as os from "node:os";
+import * as path from "node:path";
 import type FileSystemPort from "@application/ports/FileSystem.port";
 import { z } from "zod";
 import Tool from "./Tool";
@@ -25,9 +27,12 @@ class ReadFileTool extends Tool {
 	}
 
 	async execute(raw: Record<string, unknown>): Promise<string> {
-		const { path } = argsSchema.parse(raw);
+		const { path: rawPath } = argsSchema.parse(raw);
+		const resolved = rawPath.startsWith("~/")
+			? path.join(os.homedir(), rawPath.slice(2))
+			: rawPath;
 		try {
-			return await this.fs.readFile(path);
+			return await this.fs.readFile(resolved);
 		} catch (err) {
 			return `Error reading file: ${err instanceof Error ? err.message : String(err)}`;
 		}

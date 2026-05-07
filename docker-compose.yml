@@ -11,6 +11,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: password
     volumes:
       - mongodb_data:/data/db
+    mem_limit: 512m
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
       interval: 10s
@@ -29,6 +30,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: password
     volumes:
       - mongodb_data_dev:/data/db
+    mem_limit: 512m
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
       interval: 10s
@@ -53,6 +55,7 @@ services:
       - /app/node_modules
       - /app/dist
       - ~/.vee:/root/.vee
+    mem_limit: 256m
     depends_on:
       mongodb-dev:
         condition: service_healthy
@@ -78,6 +81,7 @@ services:
       NODE_ENV: production
     volumes:
       - ~/.vee:/root/.vee
+    mem_limit: 256m
     depends_on:
       mongodb:
         condition: service_healthy

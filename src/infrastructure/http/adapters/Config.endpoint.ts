@@ -1,11 +1,16 @@
-import appConfigSchema, {
-	appConfigBaseSchema,
-} from "@application/schemas/AppConfig.schema";
+import appConfigSchema, { modelSchema } from "@application/schemas/AppConfig.schema";
 import type GetConfigUseCase from "@application/usecases/GetConfig.usecase";
 import type UpdateConfigUseCase from "@application/usecases/UpdateConfig.usecase";
+import { z } from "zod";
 import Endpoint from "../server/endpoint";
 
-const configPatchSchema = appConfigBaseSchema.partial();
+const configPatchSchema = z.object({
+	systemPrompt: z.string().optional(),
+	server: z.object({ port: z.coerce.number() }).optional(),
+	mongo: z.object({ uri: z.string(), database: z.string() }).partial().optional(),
+	tokenLimit: z.coerce.number().optional(),
+	models: z.array(modelSchema).optional(),
+});
 
 export class GetConfigEndpoint extends Endpoint.typed("GET", "/config", {
 	response: appConfigSchema,
