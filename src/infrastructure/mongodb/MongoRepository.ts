@@ -1,8 +1,7 @@
 import type { Collection, Document, WithId } from "mongodb";
-import { ObjectId } from "mongodb";
 
 export type MongoDoc<T extends { id: string }> = Omit<T, "id"> & {
-	_id: ObjectId;
+	_id: string;
 };
 
 abstract class MongoRepository<
@@ -26,7 +25,7 @@ abstract class MongoRepository<
 	}
 
 	protected generateId(): string {
-		return new ObjectId().toHexString();
+		return crypto.randomUUID();
 	}
 
 	static toMongoId<T extends Document & { id: string }>(
@@ -34,7 +33,7 @@ abstract class MongoRepository<
 	): MongoDoc<T> {
 		const { id, ...rest } = entity as { id: string } & Record<string, unknown>;
 
-		return { ...rest, _id: new ObjectId(id) } as unknown as MongoDoc<T>;
+		return { ...rest, _id: id } as unknown as MongoDoc<T>;
 	}
 
 	static fromMongoId<T extends Document & { id: string }>(
@@ -42,7 +41,7 @@ abstract class MongoRepository<
 	): T {
 		const { _id, ...rest } = doc as Record<string, unknown>;
 
-		return { id: (_id as ObjectId).toHexString(), ...rest } as unknown as T;
+		return { id: _id as string, ...rest } as unknown as T;
 	}
 }
 

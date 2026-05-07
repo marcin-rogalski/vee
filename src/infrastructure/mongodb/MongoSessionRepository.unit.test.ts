@@ -1,13 +1,12 @@
-import { ObjectId } from "mongodb";
 import { describe, expect, it, vi } from "vitest";
 import MongoSessionRepository from "./MongoSessionRepository.adapter";
 
 function makeRepo() {
 	const repo = new MongoSessionRepository();
 	const col = {
-		insertOne: vi.fn(),
+		replaceOne: vi.fn(),
 		findOne: vi.fn(),
-		updateOne: vi.fn(),
+		distinct: vi.fn(),
 	};
 	// biome-ignore lint/suspicious/noExplicitAny: col is a partial mock
 	repo.initialize(col as any);
@@ -15,55 +14,65 @@ function makeRepo() {
 }
 
 describe("MongoSessionRepository", () => {
-	it("create returns inserted id as string", async () => {
+	it("upsert with id stores document with that id", async () => {
 		const { repo, col } = makeRepo();
-		const hexId = new ObjectId().toHexString();
-		col.insertOne.mockResolvedValue({});
-		// biome-ignore lint/suspicious/noExplicitAny: generateId is protected
-		vi.spyOn(repo as any, "generateId").mockReturnValue(hexId);
+		const uuid = crypto.randomUUID();
+		col.replaceOne.mockResolvedValue({ acknowledged: true });
 
-		const result = await repo.create();
+		const result = await repo.upsert({ id: uuid, history: [] });
 
-		expect(result).toBe(hexId);
-		expect(col.insertOne).toHaveBeenCalledWith(
-			expect.objectContaining({ _id: expect.any(ObjectId), history: [] }),
+		expect(col.replaceOne).toHaveBeenCalledWith(
+			{ _id: uuid },
+			{ history: [] },
+			{ upsert: true },
 		);
+		expect(result.id).toBe(uuid);
+		expect(result.history).toEqual([]);
 	});
 
-	it("get maps document to ChatSession", async () => {
+	it("upsert without id auto-assigns uuid", async () => {
 		const { repo, col } = makeRepo();
-		const id = new ObjectId();
+		col.replaceOne.mockResolvedValue({ acknowledged: true });
+
+		const result = await repo.upsert({ history: [] });
+
+		expect(typeof result.id).toBe("string");
+		expect(result.id.length).toBeGreaterThan(0);
+		expect(col.replaceOne).toHaveBeenCalledTimes(1);
+	});
+
+	it("get returns session when found", async () => {
+		const { repo, col } = makeRepo();
+		const uuid = crypto.randomUUID();
 		col.findOne.mockResolvedValue({
-			_id: id,
+			_id: uuid,
 			history: [{ author: "user", content: "hi", ts: 1 }],
 		});
 
-		const session = await repo.get(id.toString());
+		const session = await repo.get(uuid);
 
-		expect(session.id).toBe(id.toString());
+		if (!session) throw new Error("expected session to be non-null");
+		expect(session.id).toBe(uuid);
 		expect(session.history).toHaveLength(1);
 	});
 
-	it("get throws when document not found", async () => {
+	it("get returns null when not found", async () => {
 		const { repo, col } = makeRepo();
 		col.findOne.mockResolvedValue(null);
 
-		await expect(repo.get(new ObjectId().toString())).rejects.toThrow(
-			"Session not found",
-		);
+		const result = await repo.get(crypto.randomUUID());
+
+		expect(result).toBeNull();
 	});
 
-	it("update calls $push with the given entry", async () => {
+	it("list returns array of ids", async () => {
 		const { repo, col } = makeRepo();
-		col.updateOne.mockResolvedValue({});
-		const id = new ObjectId();
-		const entry = { author: "user" as const, content: "hello", ts: Date.now() };
+		const uuid1 = crypto.randomUUID();
+		const uuid2 = crypto.randomUUID();
+		col.distinct.mockResolvedValue([uuid1, uuid2]);
 
-		await repo.update(id.toString(), entry);
+		const result = await repo.list();
 
-		expect(col.updateOne).toHaveBeenCalledWith(
-			{ _id: expect.any(ObjectId) },
-			{ $push: { history: entry } },
-		);
+		expect(result).toEqual([uuid1, uuid2]);
 	});
 });

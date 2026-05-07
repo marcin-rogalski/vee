@@ -1,7 +1,7 @@
 ---
 type: plan
 slug: model-selection-config-api
-status: ready-to-implement
+status: implemented
 created: 2026-05-06
 last_synced: 61f79b443a01b90604653d02e7c8d14b2122bf86
 references:

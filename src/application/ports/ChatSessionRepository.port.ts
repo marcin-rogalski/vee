@@ -2,9 +2,9 @@ import type ChatEntry from "@application/dto/ChatEntry.dto";
 import type ChatSession from "../dto/ChatSession";
 
 interface SessionRepositoryPort {
-	create(): Promise<string>;
-	get(id: string): Promise<ChatSession>;
-	update(sessionId: string, message: ChatEntry): Promise<void>;
+	upsert(session: { id?: string; history: ChatEntry[] }): Promise<ChatSession>;
+	get(id: string): Promise<ChatSession | null>;
+	list(): Promise<string[]>;
 }
 
 export default SessionRepositoryPort;

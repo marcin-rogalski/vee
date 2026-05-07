@@ -25,24 +25,24 @@ class ChatContextManager implements ChatContextManagerPort {
 
 	async getContext(sessionId: string): Promise<ChatContextPort> {
 		const cacheEntry = this.cache.get(sessionId);
-
 		if (cacheEntry) {
 			cacheEntry.lastRead = Date.now();
 			return cacheEntry.context;
 		}
 
-		const session = await this.sessionRepository.get(sessionId);
+		const session =
+			(await this.sessionRepository.get(sessionId)) ??
+			(await this.sessionRepository.upsert({ id: sessionId, history: [] }));
+		const history = session.history;
 
 		const context = new RollingWindowContext(
 			sessionId,
 			this.config.systemPrompt,
-			session.history,
+			history,
 			this.config.tokenLimit,
 			this.sessionRepository,
 		);
-
 		this.cache.set(sessionId, { context, lastRead: Date.now() });
-
 		return context;
 	}
 

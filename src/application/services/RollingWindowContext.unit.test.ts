@@ -7,9 +7,9 @@ vi.mock("tiktoken", () => ({
 }));
 
 const repo = {
-	create: vi.fn(),
+	upsert: vi.fn().mockResolvedValue(undefined),
 	get: vi.fn(),
-	update: vi.fn().mockResolvedValue(undefined),
+	list: vi.fn(),
 };
 
 function make(tokenLimit: number, history: ChatEntry[] = []) {
@@ -68,7 +68,10 @@ describe("RollingWindowContext", () => {
 		const entry: ChatEntry = { author: "assistant", content: "hey", ts: 0 };
 		await ctx.push(entry);
 		expect(ctx.entries).toContainEqual(entry);
-		expect(repo.update).toHaveBeenCalledWith("s1", entry);
+		expect(repo.upsert).toHaveBeenCalledWith({
+			id: "s1",
+			history: expect.arrayContaining([entry]),
+		});
 	});
 
 	it("commitTurn moves user and currentTurn into history for next turn", async () => {

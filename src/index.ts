@@ -7,6 +7,10 @@ import {
 	GetConfigEndpoint,
 	PatchConfigEndpoint,
 } from "./infrastructure/http/adapters/Config.endpoint";
+import {
+	GetSessionsEndpoint,
+	PostSessionsEndpoint,
+} from "./infrastructure/http/adapters/Sessions.endpoint";
 import HealthEndpoint from "./infrastructure/http/adapters/Health.endpoint";
 import UserMessageEndpoint from "./infrastructure/http/adapters/UserMessage.endpoint";
 import Server from "./infrastructure/http/server";
@@ -56,6 +60,8 @@ async function start() {
 	const patchConfigEndpoint = new PatchConfigEndpoint(
 		new UpdateConfigUseCase(configRepository),
 	);
+	const getSessionsEndpoint = new GetSessionsEndpoint(sessionRepo);
+	const postSessionsEndpoint = new PostSessionsEndpoint(sessionRepo);
 
 	// registrations
 	db.register(sessionRepo);
@@ -70,15 +76,31 @@ async function start() {
 		userMessageEndpoint,
 		getConfigEndpoint,
 		patchConfigEndpoint,
+		getSessionsEndpoint,
+		postSessionsEndpoint,
 	);
 
 	// start
 	await db.connect();
 	await server.start();
+
 	logger.info("app.start", {
 		port: config.server.port,
 		mongoUri: config.mongo.uri.replace(/(\/\/)[^@]*@/, "$1***@"),
-		activeModel: activeModelConfig?.name ?? "none",
+		mongoDatabase: config.mongo.database,
+		tokenLimit: config.tokenLimit,
+		systemPrompt: config.systemPrompt
+			? `${config.systemPrompt.slice(0, 60)}…`
+			: null,
+		models: config.models.map((m) => ({
+			id: m.id,
+			type: m.type,
+			name: m.name ?? null,
+			active: m.active ?? false,
+		})),
+		activeModel: activeModelConfig
+			? `${activeModelConfig.id} (${activeModelConfig.name ?? activeModelConfig.type})`
+			: "none",
 	});
 }
 

@@ -52,6 +52,7 @@ services:
       - .:/app
       - /app/node_modules
       - /app/dist
+      - ~/.vee:/root/.vee
     depends_on:
       mongodb-dev:
         condition: service_healthy
@@ -75,6 +76,8 @@ services:
     environment:
       MONGO_URI: mongodb://root:password@mongodb:27017/vee?authSource=admin
       NODE_ENV: production
+    volumes:
+      - ~/.vee:/root/.vee
     depends_on:
       mongodb:
         condition: service_healthy

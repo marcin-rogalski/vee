@@ -14,9 +14,9 @@ const config = {
 };
 
 const repo = {
-	create: vi.fn(),
+	upsert: vi.fn().mockResolvedValue({ id: "s1", history: [] }),
 	get: vi.fn().mockResolvedValue({ id: "s1", history: [] }),
-	update: vi.fn().mockResolvedValue(undefined),
+	list: vi.fn(),
 };
 
 function make() {

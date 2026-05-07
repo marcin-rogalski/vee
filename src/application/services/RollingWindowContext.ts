@@ -30,9 +30,14 @@ class RollingWindowContext implements ChatContextPort {
 
 	async push(...entries: ChatEntry[]): Promise<void> {
 		for (const entry of entries) {
-			await this.sessionRepository.update(this.sessionId, entry);
 			this.currentTurn.push(entry);
 		}
+		const fullHistory = [
+			...this.history,
+			...(this.userEntry ? [this.userEntry] : []),
+			...this.currentTurn,
+		];
+		await this.sessionRepository.upsert({ id: this.sessionId, history: fullHistory });
 		this._entries = this.computeWindow();
 	}
 
