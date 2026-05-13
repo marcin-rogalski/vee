@@ -45,8 +45,10 @@
 		"paths": {
 			"@domain/*": ["./src/domain/*"],
 			"@application/*": ["./src/application/*"],
-			"@infrastructure/*": ["./src/infrastructure/*"]
+			"@driving/*": ["./src/infrastructure/driving/*"],
+			"@driven/*": ["./src/infrastructure/driven/*"],
+			"@utilities/*": ["./src/infrastructure/utilities/*"]
 		}
 	},
-	"exclude": ["vitest.config.ts"]
+	"exclude": ["vitest.config.ts", "src_old/**/*"]
 }

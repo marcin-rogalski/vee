@@ -1,8 +1,8 @@
 interface LoggerPort {
-	info(event: string, fields: Record<string, unknown>): void;
-	warn(event: string, fields: Record<string, unknown>): void;
-	error(event: string, fields: Record<string, unknown>, err?: unknown): void;
-	debug(event: string, fields: Record<string, unknown>): void;
+	info(message: string, ...args: unknown[]): void
+	warn(message: string, ...args: unknown[]): void
+	error(message: string, ...args: unknown[]): void
+	debug(message: string, ...args: unknown[]): void
 }
 
-export default LoggerPort;
+export default LoggerPort

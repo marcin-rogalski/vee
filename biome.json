@@ -6,11 +6,15 @@
 		"useIgnoreFile": false
 	},
 	"files": {
-		"ignoreUnknown": false
+		"ignoreUnknown": false,
+		"includes": ["*.ts", "src/**/*.ts", "**/*.json"]
 	},
 	"formatter": {
 		"enabled": true,
-		"indentStyle": "tab"
+		"indentStyle": "tab",
+		"indentWidth": 2,
+		"bracketSameLine": false,
+		"bracketSpacing": true
 	},
 	"linter": {
 		"enabled": true,
@@ -20,7 +24,10 @@
 	},
 	"javascript": {
 		"formatter": {
-			"quoteStyle": "double"
+			"quoteStyle": "single",
+			"semicolons": "asNeeded",
+			"operatorLinebreak": "after",
+			"quoteProperties": "asNeeded"
 		}
 	},
 	"assist": {
