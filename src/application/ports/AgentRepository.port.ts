@@ -1,9 +1,9 @@
-import type AgentDto from '@application/dto/Agent.dto'
+import type Agent from '@domain/Agent'
 
 interface AgentRepositoryPort {
-	findById(id: string): Promise<AgentDto | null>
-	findAll(): Promise<Array<AgentDto>>
-	save(agent: AgentDto): Promise<void>
+	get(id: string): Promise<Agent>
+	list(): Promise<Array<Pick<Agent, 'id' | 'name' | 'description'>>>
+	save(agent: Agent): Promise<void>
 	delete(id: string): Promise<void>
 }
 

@@ -1,14 +1,12 @@
-import type { ChatSessionSummaryDto } from '@application/dto/Session.dto'
 import type SessionRepositoryPort from '@application/ports/SessionRepository.port'
 
 class SessionListUseCase {
-	constructor(readonly sessionRepository: SessionRepositoryPort) {
-		//
-	}
+	constructor(readonly sessionRepository: SessionRepositoryPort) {}
 
-	async execute(agentId: string): Promise<Array<ChatSessionSummaryDto>> {
-		return await this.sessionRepository.findAllByAgentId(agentId)
+	async execute(): Promise<Array<Pick<Session, 'id' | 'name'>>> {
+		return await this.sessionRepository.list()
 	}
 }
 
+import type Session from '@domain/Session'
 export default SessionListUseCase

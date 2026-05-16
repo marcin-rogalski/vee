@@ -1,7 +1,7 @@
 import type { Server as HttpServer } from 'node:http'
 import type LoggerPort from '@application/ports/Logger.port'
 import express from 'express'
-import type { AnyEndpoint } from './ExpressEndpoint.adapter'
+import type { IEndpoint } from './ExpressEndpoint.adapter'
 
 export default class ExpressServer {
 	private express = express()
@@ -29,7 +29,7 @@ export default class ExpressServer {
 		this.express.use(express.json())
 	}
 
-	register(...endpoints: AnyEndpoint[]): this {
+	register(...endpoints: IEndpoint[]): this {
 		for (const endpoint of endpoints) {
 			const expressPath = endpoint.path.replace(/\{(\w+)(?::\w+)?\}/g, ':$1')
 			this.express[endpoint.method.toLowerCase() as keyof typeof this.express](

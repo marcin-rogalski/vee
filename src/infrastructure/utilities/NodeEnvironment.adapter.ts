@@ -13,7 +13,7 @@ class NodeEnvironment {
 		// paths
 		CONFIG_FOLDER: z.string().default(`${homedir()}/.vee`),
 		AGENT_REPOSITORY_FILE: z.string().default('agents.json'),
-		INTEGRATION_REPOSITORY_FILE: z.string().default('integrations.json'),
+		PROVIDER_REPOSITORY_FILE: z.string().default('integrations.json'),
 		SESSION_REPOSITORY_FILE: z.string().default('sessions.json'),
 
 		// ports
@@ -31,9 +31,8 @@ class NodeEnvironment {
 	//ports
 	public readonly serverPort: number
 
-	constructor(_logger: LoggerPort) {
+	constructor(private readonly logger: LoggerPort) {
 		const env = NodeEnvironment.schema.parse(process.env)
-		// todo: log env
 
 		this.mode = env.NODE_ENV
 
@@ -45,17 +44,24 @@ class NodeEnvironment {
 		)
 		this.integrationRepositoryPath = join(
 			env.CONFIG_FOLDER,
-			env.INTEGRATION_REPOSITORY_FILE,
+			env.PROVIDER_REPOSITORY_FILE,
 		)
 		this.sessionRepositoryPath = join(
 			env.CONFIG_FOLDER,
 			env.SESSION_REPOSITORY_FILE,
 		)
-		// todo: log paths
 
 		// ports
 		this.serverPort = env.SEVER_PORT
-		// todo: log ports
+
+		this.logger.info('Environment loaded', {
+			mode: this.mode,
+			configFolderPath: this.configFolderPath,
+			agentRepositoryPath: this.agentRepositoryPath,
+			integrationRepositoryPath: this.integrationRepositoryPath,
+			sessionRepositoryPath: this.sessionRepositoryPath,
+			serverPort: env.SEVER_PORT,
+		})
 	}
 }
 export default NodeEnvironment

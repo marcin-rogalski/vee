@@ -1,10 +1,10 @@
-import type ChatSessionDto from '@application/dto/Session.dto'
-import type { ChatSessionSummaryDto } from '@application/dto/Session.dto'
+import type Session from '@domain/Session'
 
 interface SessionRepositoryPort {
-	findById(id: string): Promise<ChatSessionDto | null>
-	findAllByAgentId(agentId: string): Promise<Array<ChatSessionSummaryDto>>
-	save(session: ChatSessionDto): Promise<void>
+	get(id: string): Promise<Session>
+	list(): Promise<Array<Pick<Session, 'id' | 'name'>>>
+	create(name: string): Promise<Session>
+	setName(id: string, name: string): Promise<void>
 	delete(id: string): Promise<void>
 }
 

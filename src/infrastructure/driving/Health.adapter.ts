@@ -1,12 +1,14 @@
 import ExpressEndpoint from '@utilities/ExpressEndpoint.adapter'
 import z from 'zod'
 
-class Health extends ExpressEndpoint.typed('GET', '/health', {
-	response: z.object({ status: z.string() }),
-}) {
-	handle() {
-		return { status: 'ok' }
-	}
-}
+const Health = () =>
+	ExpressEndpoint.createEndpoint(
+		'GET',
+		'/health',
+		{ response: z.object({ status: z.string() }) },
+		async () => {
+			return { status: 'ok' }
+		},
+	)
 
 export default Health

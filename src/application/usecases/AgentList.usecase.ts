@@ -1,13 +1,12 @@
-import type AgentManagerPort from '@application/ports/AgentManager.port'
+import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
 
 class AgentListUseCase {
-	constructor(readonly agentManager: AgentManagerPort) {
-		//
-	}
+	constructor(readonly agentRepository: AgentRepositoryPort) {}
 
-	async execute(): Promise<Array<string>> {
-		return await this.agentManager.list()
+	async execute(): Promise<Array<Pick<Agent, 'id' | 'name' | 'description'>>> {
+		return await this.agentRepository.list()
 	}
 }
 
+import type Agent from '@domain/Agent'
 export default AgentListUseCase

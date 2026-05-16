@@ -1,12 +1,10 @@
-import type AgentManagerPort from '@application/ports/AgentManager.port'
+import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
 
 class AgentDeleteUseCase {
-	constructor(readonly agentManager: AgentManagerPort) {
-		//
-	}
+	constructor(readonly agentRepository: AgentRepositoryPort) {}
 
 	async execute(id: string): Promise<void> {
-		await this.agentManager.delete(id)
+		await this.agentRepository.delete(id)
 	}
 }
 

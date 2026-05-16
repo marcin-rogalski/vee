@@ -10,27 +10,38 @@ describe('WriteFileAdapter', () => {
 		const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'vee-test-'))
 		const filePath = path.join(tmpDir, 'nested', 'file.txt')
 
-		const result = await tool.execute({
-			path: filePath,
-			content: 'test data',
-		})
+		const result = await tool.execute(
+			JSON.stringify({
+				path: filePath,
+				content: 'test data',
+			}),
+		)
 
-		expect(result).toMatch('File written successfully')
+		expect(result.content).toMatch('File written successfully')
 		expect(await fs.readFile(filePath, 'utf-8')).toBe('test data')
 		await fs.rm(tmpDir, { recursive: true })
 	})
 
 	it('returns error message on failure', async () => {
 		const tool = new WriteFileAdapter()
-		const result = await tool.execute({
-			path: '/root/unauthorized/file.txt',
-			content: 'data',
-		})
-		expect(result).toMatch('Error writing file:')
+		const result = await tool.execute(
+			JSON.stringify({
+				path: '/root/unauthorized/file.txt',
+				content: 'data',
+			}),
+		)
+		expect(result.content).toMatch('Error writing file:')
 	})
 
-	it('throws on invalid args', async () => {
+	it('returns error code on invalid args', async () => {
 		const tool = new WriteFileAdapter()
-		await expect(tool.execute({ path: '/x' })).rejects.toThrow()
+		const result = await tool.execute(JSON.stringify({ path: '/x' }))
+		expect(result.code).toBe(400)
+	})
+
+	it('returns error code on invalid JSON', async () => {
+		const tool = new WriteFileAdapter()
+		const result = await tool.execute('not-json')
+		expect(result.code).toBe(400)
 	})
 })

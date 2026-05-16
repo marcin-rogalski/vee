@@ -1,15 +1,12 @@
-import type AgentDto from '@application/dto/Agent.dto'
-import type ModelConfigurationDto from '@application/dto/ModelConfiguration.dto'
-import type AgentManagerPort from '@application/ports/AgentManager.port'
+import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
 
 class AgentUpsertUseCase {
-	constructor(readonly agentManager: AgentManagerPort) {
-		//
-	}
+	constructor(readonly agentRepository: AgentRepositoryPort) {}
 
-	async execute(agent: AgentDto<ModelConfigurationDto>): Promise<void> {
-		await this.agentManager.upsert(agent)
+	async execute(agent: Agent): Promise<void> {
+		await this.agentRepository.save(agent)
 	}
 }
 
+import type Agent from '@domain/Agent'
 export default AgentUpsertUseCase

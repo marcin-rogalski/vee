@@ -1,152 +1,167 @@
-import { randomUUID } from 'node:crypto'
-import type AgentDto from '@application/dto/Agent.dto'
-import type ContextDto from '@application/dto/Context.dto'
-import type ContextEntryDto from '@application/dto/ContextEntry.dto'
-import type InferenceEnvelopeDto from '@application/dto/InferenceEnvelope.dto'
-import type { InferenceEventDto } from '@application/dto/InferenceEnvelope.dto'
-import type ToolDefinitionDto from '@application/dto/ToolDefinition.dto'
-import type AgentManagerPort from '@application/ports/AgentManager.port'
-import type ContextManagerPort from '@application/ports/ContextManager.port'
-import type IntegrationManagerPort from '@application/ports/IntegrationManager.port'
-import type IntegrationRuntimePort from '@application/ports/IntegrationRuntime.port'
-import type LoggerPort from '@application/ports/Logger.port'
-import type SessionManagerPort from '@application/ports/SessionManager.port'
-import type ToolManagerPort from '@application/ports/ToolManager.port'
+import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
+import type ContextRepositoryPort from '@application/ports/ContextRepository.port'
+import type EventBusPort from '@application/ports/EventBus.port'
+import { Channel, type Envelope } from '@application/ports/EventBus.port'
+import type ProviderPort from '@application/ports/Provider.port'
+import type ProviderRegistryPort from '@application/ports/ProviderRegistry.port'
+import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
+import type SessionRepositoryPort from '@application/ports/SessionRepository.port'
+import type ToolRegistryPort from '@application/ports/ToolRgistry.port'
+import type ConversationEntry from '@domain/ConversationEntry'
+
+type PendingToolCall = {
+	index: number
+	name: string
+	content: string
+	code: number | undefined
+}
 
 class InferUseCase {
+	private readonly channel = Channel.INFERENCE
+
 	constructor(
-		readonly logger: LoggerPort,
-		readonly sessionManager: SessionManagerPort,
-		readonly contextManager: ContextManagerPort,
-		readonly agentManager: AgentManagerPort,
-		readonly integrationManager: IntegrationManagerPort,
-		readonly toolManager: ToolManagerPort,
+		readonly sessionRepository: SessionRepositoryPort,
+		readonly contextRepository: ContextRepositoryPort,
+		readonly providerRepository: ProviderRepositoryPort,
+		readonly providerRegistry: ProviderRegistryPort,
+		readonly agentRepository: AgentRepositoryPort,
+		readonly toolRepository: ToolRegistryPort,
+		readonly eventBus: EventBusPort,
 	) {}
 
-	async *execute(
+	async execute(
 		prompt: string,
 		agentId: string,
 		sessionId: string,
-	): AsyncGenerator<InferenceEnvelopeDto> {
-		const session = await this.sessionManager.get(sessionId)
-		const agent = await this.agentManager.get(agentId)
-		const context = await this.contextManager.getContext(session, agent)
-		const tools = await this.toolManager.getTools()
-		const integration = await this.integrationManager.get(agent.integrationId)
+	): Promise<void> {
+		const agent = await this.agentRepository.get(agentId)
+		const providerEntity = await this.providerRepository.get(agent.providerId)
+		const provider = this.providerRegistry.resolve(providerEntity)
+		const tools = agent.toolIds.map(
+			(id) => this.toolRepository.get(id).definition,
+		)
 
-		context.startTurn(prompt)
-
-		yield this.toEnvelope(sessionId, {
-			type: 'prompt',
-			data: { content: prompt },
-		})
-
-		for await (const event of this.infer(agent, integration, context, tools)) {
-			const entry = this.buildContextEntry(event)
-			if (entry) {
-				context.push(entry)
-				this.sessionManager.append(session.id, entry)
-			}
-			yield this.toEnvelope(sessionId, event)
+		let entry: ConversationEntry = {
+			id: crypto.randomUUID(),
+			role: 'user',
+			content: prompt,
+			ts: Date.now(),
 		}
 
-		context.commitTurn()
-	}
+		await this.publish({ type: 'prompt', ...entry })
+		await this.contextRepository.append(sessionId, entry)
 
-	private buildContextEntry(event: InferenceEventDto): ContextEntryDto | null {
-		const ts = Date.now()
-
-		switch (event.type) {
-			case 'token':
-				return { author: 'assistant', data: event.data.content, ts }
-			case 'tool-call':
-				return {
-					author: 'tool-call',
-					id: event.data.correlationId,
-					name: event.data.name,
-					arguments: event.data.arguments,
-					ts,
-				}
-			case 'tool-response':
-				return {
-					author: 'tool-result',
-					id: event.data.correlationId,
-					result: event.data.result,
-					ts,
-				}
-			default:
-				return null
-		}
-	}
-
-	private toEnvelope(
-		sessionId: string,
-		event: InferenceEventDto,
-	): InferenceEnvelopeDto {
-		return {
-			id: randomUUID(),
-			sessionId,
-			timestamp: Date.now(),
-			...event,
-		}
-	}
-
-	private async *infer(
-		{ model }: AgentDto,
-		{ infer }: IntegrationRuntimePort,
-		{ entries }: ContextDto,
-		tools: ToolDefinitionDto[],
-	): AsyncGenerator<InferenceEventDto> {
 		while (true) {
-			const pendingToolCalls: Array<
-				Promise<{ correlationId: string; result: string; code?: number }>
-			> = []
+			const context = await this.getContext(sessionId, provider)
+			let pendingTokens: string[] = []
+			let pendingToolCalls: Array<Promise<PendingToolCall>> = []
 
-			for await (const event of infer(model, entries, tools)) {
+			for await (const event of provider.infer(
+				agent.providerConfiguration,
+				context,
+				tools,
+			)) {
 				switch (event.type) {
-					case 'tool-call': {
-						const correlationId = randomUUID()
+					case 'thought': {
+						this.publish({
+							id: crypto.randomUUID(),
+							role: 'assistant',
+							type: 'thought',
+							content: event.content,
+							ts: Date.now(),
+						})
+						continue
+					}
 
-						yield { type: 'tool-call', data: { ...event.data, correlationId } }
+					case 'token': {
+						pendingTokens.push(event.content)
+						this.publish({
+							id: crypto.randomUUID(),
+							role: 'assistant',
+							type: 'token',
+							content: event.content,
+							ts: Date.now(),
+						})
+						continue
+					}
+
+					case 'tool-call': {
+						const id = crypto.randomUUID()
+						const role = 'assistant'
+						const content = pendingTokens.join('')
+						const ts = Date.now()
+
+						entry = { id, role, content, toolCalls: event.toolCalls, ts }
+						pendingTokens = []
+
+						await this.publish({
+							id,
+							role,
+							type: 'tool-call',
+							toolCalls: event.toolCalls,
+							ts,
+						})
+						await this.contextRepository.append(sessionId, entry)
 
 						pendingToolCalls.push(
-							this.toolManager
-								.executeTool(event.data.name, event.data.arguments)
-								.then((result) => ({ correlationId, ...result })),
+							...event.toolCalls.map(
+								async ({ name, arguments: args }, index) => {
+									const tool = this.toolRepository.get(name)
+									const result = await tool.execute(args)
+
+									return { index, name, ...result }
+								},
+							),
 						)
-
-						break
 					}
-					default:
-						yield event
 				}
 			}
 
-			if (!pendingToolCalls.length) {
-				break
-			}
+			if (pendingToolCalls.length) {
+				while (pendingToolCalls.length) {
+					const { index, name, content, code } =
+						await Promise.race(pendingToolCalls)
 
-			while (pendingToolCalls.length) {
-				const { index, result } = await Promise.race(
-					pendingToolCalls.map(async (toolCall, index) => {
-						const result = await toolCall
+					pendingToolCalls.splice(index, 1)
 
-						return { index, result }
-					}),
-				)
+					const id = crypto.randomUUID()
+					const role = 'system'
+					const type = 'tool-response'
+					const ts = Date.now()
 
-				pendingToolCalls.splice(index, 1)
+					entry = { id, role, name, content, ts }
 
-				yield {
-					type: 'tool-response',
-					data: {
-						correlationId: result.correlationId,
-						result: result.result,
-						code: result.code ?? 0,
-					},
+					await this.publish({ id, role, type, name, content, code, ts })
+					await this.contextRepository.append(sessionId, entry)
 				}
+
+				pendingToolCalls = []
+
+				continue
 			}
+
+			break
 		}
+	}
+
+	private async getContext(
+		sessionId: string,
+		provider: ProviderPort,
+	): Promise<Array<ConversationEntry>> {
+		const context = await this.contextRepository.get(sessionId)
+
+		if (provider.shouldCompact(context)) {
+			const compacted = await provider.compact(context)
+			await this.contextRepository.update(sessionId, compacted)
+
+			return compacted
+		}
+
+		return context
+	}
+
+	private async publish(event: Envelope): Promise<void> {
+		await this.eventBus.publish(this.channel, event)
 	}
 }
 

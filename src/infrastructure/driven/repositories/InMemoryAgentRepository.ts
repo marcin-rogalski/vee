@@ -1,22 +1,29 @@
-import type AgentDto from '@application/dto/Agent.dto'
 import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
+import type Agent from '@domain/Agent'
 
-/**
- * In-memory agent repository — uses AgentDto with default ModelConfigurationDto.
- * Infrastructure adapters can extend ModelConfigurationDto with provider-specific fields.
- */
 class InMemoryAgentRepository implements AgentRepositoryPort {
-	private agents: Map<string, AgentDto> = new Map()
+	private agents: Map<string, Agent> = new Map()
 
-	async findById(id: string): Promise<AgentDto | null> {
-		return this.agents.get(id) ?? null
+	async get(id: string): Promise<Agent> {
+		const agent = this.agents.get(id)
+		if (!agent) throw new Error(`Agent with id ${id} not found`)
+		return agent
 	}
 
-	async findAll(): Promise<Array<AgentDto>> {
-		return Array.from(this.agents.values())
+	async list(): Promise<Array<Pick<Agent, 'id' | 'name' | 'description'>>> {
+		return Array.from(this.agents.values()).map((agent) => {
+			const result: Pick<Agent, 'id' | 'name' | 'description'> = {
+				id: agent.id,
+				name: agent.name,
+			}
+			if (agent.description !== undefined) {
+				result.description = agent.description
+			}
+			return result
+		})
 	}
 
-	async save(agent: AgentDto): Promise<void> {
+	async save(agent: Agent): Promise<void> {
 		this.agents.set(agent.id, agent)
 	}
 

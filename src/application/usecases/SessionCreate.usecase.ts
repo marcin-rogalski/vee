@@ -1,12 +1,10 @@
-import type SessionManagerPort from '@application/ports/SessionManager.port'
+import type SessionRepositoryPort from '@application/ports/SessionRepository.port'
 
 class SessionCreateUseCase {
-	constructor(readonly sessionManager: SessionManagerPort) {
-		//
-	}
+	constructor(readonly sessionRepository: SessionRepositoryPort) {}
 
-	async execute(): Promise<string> {
-		const session = await this.sessionManager.create()
+	async execute(name?: string): Promise<string> {
+		const session = await this.sessionRepository.create(name ?? '')
 		return session.id
 	}
 }

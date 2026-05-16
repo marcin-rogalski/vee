@@ -1,8 +1,16 @@
-import type ToolDefinitionDto from '@application/dto/ToolDefinition.dto'
-
 interface ToolPort {
-	definition: ToolDefinitionDto
-	execute(args: Record<string, unknown>): Promise<string>
+	id: string
+	description: string
+	definition: ToolDefinition
+	execute(
+		parameters: string,
+	): Promise<{ content: string; code: number | undefined }>
 }
 
 export default ToolPort
+
+export interface ToolDefinition {
+	name: string
+	description: string
+	parameters: string
+}
