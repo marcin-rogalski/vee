@@ -11,6 +11,7 @@ const AgentUpsert = (useCase: AgentUpsertUseCase) =>
 				id: z.string(),
 				name: z.string(),
 				description: z.string().optional(),
+				systemPrompt: z.string(),
 				providerId: z.string(),
 				providerConfiguration: z.record(z.string(), z.unknown()),
 				toolIds: z.array(z.string()),

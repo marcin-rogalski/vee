@@ -52,7 +52,17 @@ class InferUseCase {
 		await this.contextRepository.append(sessionId, entry)
 
 		while (true) {
-			const context = await this.getContext(sessionId, provider)
+			const context = [
+				{
+					id: 'system-prompt',
+					role: 'system' as const,
+					content: agent.systemPrompt,
+					ts: 0,
+				},
+				// todo: introduce skills
+				// todo: introduce mcp
+				...(await this.getContext(sessionId, provider)),
+			]
 			let pendingTokens: string[] = []
 			let pendingToolCalls: Array<Promise<PendingToolCall>> = []
 
