@@ -249,7 +249,9 @@ describe('ExpressEndpoint', () => {
 			body: {},
 			query: {},
 			on: vi.fn().mockImplementation((event: string, cb: () => void) => {
-				if (event === 'close') closeCallback = cb
+				if (event === 'close') {
+					closeCallback = cb
+				}
 			}),
 		} as any
 		const mockRes = {
@@ -281,7 +283,9 @@ describe('ExpressEndpoint', () => {
 			body: {},
 			query: {},
 			on: vi.fn().mockImplementation((event: string, cb: () => void) => {
-				if (event === 'close') closeCallback = cb
+				if (event === 'close') {
+					closeCallback = cb
+				}
 			}),
 		} as any
 		const mockRes = {
@@ -322,7 +326,9 @@ describe('ExpressEndpoint', () => {
 			body: {},
 			query: {},
 			on: vi.fn().mockImplementation((event: string, cb: () => void) => {
-				if (event === 'close') closeCallback = cb
+				if (event === 'close') {
+					closeCallback = cb
+				}
 			}),
 		} as any
 		const mockRes = {

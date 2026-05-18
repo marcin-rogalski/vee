@@ -6,7 +6,9 @@ class InMemoryProviderRepository implements ProviderRepositoryPort {
 
 	async get(id: string): Promise<Provider> {
 		const provider = this.providers.get(id)
-		if (!provider) throw new Error(`Provider with id ${id} not found`)
+		if (!provider) {
+			throw new Error(`Provider with id ${id} not found`)
+		}
 		return provider
 	}
 

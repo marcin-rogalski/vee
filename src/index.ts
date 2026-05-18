@@ -17,6 +17,7 @@ import InMemorySessionRepository from '@driven/repositories/InMemorySessionRepos
 import AgentDelete from '@driving/AgentDelete.adapter'
 import AgentList from '@driving/AgentList.adapter'
 import AgentUpsert from '@driving/AgentUpsert.adapter'
+import EventsSSE from '@driving/EventsSSE.adapter'
 import Health from '@driving/Health.adapter'
 import Infer from '@driving/Infer.adapter'
 import ProviderDelete from '@driving/ProviderDelete.adapter'
@@ -46,15 +47,15 @@ async function main() {
 	const eventBus = new InMemoryEventBus()
 
 	// use cases
-	const agentUpsert = new AgentUpsertUseCase(agentRepository)
+	const agentUpsert = new AgentUpsertUseCase(agentRepository, eventBus)
 	const agentList = new AgentListUseCase(agentRepository)
-	const agentDelete = new AgentDeleteUseCase(agentRepository)
-	const providerUpsert = new ProviderUpsertUseCase(providerRepository)
+	const agentDelete = new AgentDeleteUseCase(agentRepository, eventBus)
+	const providerUpsert = new ProviderUpsertUseCase(providerRepository, eventBus)
 	const providerList = new ProviderListUseCase(providerRepository)
-	const providerDelete = new ProviderDeleteUseCase(providerRepository)
-	const sessionCreate = new SessionCreateUseCase(sessionRepository)
+	const providerDelete = new ProviderDeleteUseCase(providerRepository, eventBus)
+	const sessionCreate = new SessionCreateUseCase(sessionRepository, eventBus)
 	const sessionList = new SessionListUseCase(sessionRepository)
-	const sessionDelete = new SessionDeleteUseCase(sessionRepository)
+	const sessionDelete = new SessionDeleteUseCase(sessionRepository, eventBus)
 	const infer = new InferUseCase(
 		sessionRepository,
 		contextRepository,
@@ -77,6 +78,7 @@ async function main() {
 	const sessionListEndpoint = SessionList(sessionList)
 	const sessionDeleteEndpoint = SessionDelete(sessionDelete)
 	const inferEndpoint = Infer(infer)
+	const eventsSSEEndpoint = EventsSSE(eventBus)
 
 	// init
 	server.register(
@@ -91,6 +93,7 @@ async function main() {
 		sessionListEndpoint,
 		sessionDeleteEndpoint,
 		inferEndpoint,
+		eventsSSEEndpoint,
 	)
 
 	await server.start()

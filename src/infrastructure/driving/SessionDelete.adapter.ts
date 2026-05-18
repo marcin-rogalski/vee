@@ -2,8 +2,6 @@ import type SessionDeleteUseCase from '@application/usecases/SessionDelete.useca
 import ExpressEndpoint from '@utilities/ExpressEndpoint.adapter'
 import z from 'zod'
 
-let _useCase: SessionDeleteUseCase
-
 const SessionDelete = (useCase: SessionDeleteUseCase) =>
 	ExpressEndpoint.createEndpoint(
 		'DELETE',

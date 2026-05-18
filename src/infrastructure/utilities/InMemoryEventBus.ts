@@ -1,47 +1,57 @@
 import type EventBusPort from '@application/ports/EventBus.port'
-import type { Channel, Envelope } from '@application/ports/EventBus.port'
-
-type HandlerFn = (envelope: Envelope) => void
-type UnsubscribeFn = () => void
-
-type Subscription = {
-	eventType: string
-	handler: HandlerFn
-}
+import type { Envelope } from '@application/ports/EventBus.port'
 
 class InMemoryEventBus implements EventBusPort {
-	private readonly subscriptions: Map<Channel, Array<Subscription>> = new Map()
+	private readonly subscribers: Array<Subscriber> = []
 
-	async publish(channel: Channel, envelope: Envelope): Promise<void> {
-		const subs = this.subscriptions.get(channel)
-		if (!subs) return
-		for (const sub of subs) {
-			if (sub.eventType === envelope.type) {
-				sub.handler(envelope)
-			}
+	publish(envelope: Envelope): void {
+		for (const subscriber of this.subscribers) {
+			subscriber.resolve(envelope)
 		}
 	}
 
-	subscribe(
-		channel: Channel,
-		eventType: Envelope['type'],
-		handler: HandlerFn,
-	): UnsubscribeFn {
-		const subs = this.subscriptions.get(channel)
-		if (!subs) {
-			this.subscriptions.set(channel, [{ eventType, handler }])
-		} else {
-			subs.push({ eventType, handler })
+	subscribe(): AsyncGenerator<Envelope> & { unsubscribe: () => void } {
+		const subscriber = new Subscriber()
+
+		const unsubscribe = () => {
+			subscriber.reject(new Error('Unsubscribed'))
+
+			const index = this.subscribers.indexOf(subscriber)
+			if (index !== -1) {
+				this.subscribers.splice(index, 1)
+			}
 		}
-		return () => {
-			const filtered =
-				this.subscriptions
-					.get(channel)
-					?.filter((s) => s.eventType !== eventType && s.handler !== handler) ??
-				[]
-			this.subscriptions.set(channel, filtered)
-		}
+
+		const generator = subscriber.generate()
+
+		Object.assign(generator, { unsubscribe })
+
+		return generator as AsyncGenerator<Envelope> & { unsubscribe: () => void }
 	}
 }
 
 export default InMemoryEventBus
+
+class Subscriber {
+	private resolvable: PromiseWithResolvers<Envelope> = Promise.withResolvers()
+
+	resolve(envelope: Envelope) {
+		this.resolvable.resolve(envelope)
+		this.resolvable = Promise.withResolvers()
+	}
+
+	reject(error: Error) {
+		this.resolvable.reject(error)
+	}
+
+	async *generate(): AsyncGenerator<Envelope> {
+		try {
+			while (true) {
+				yield await this.resolvable.promise
+				this.resolvable = Promise.withResolvers()
+			}
+		} catch (_error) {
+			// gracefully exit the loop
+		}
+	}
+}

@@ -57,7 +57,9 @@ class InMemorySessionRepository implements SessionRepositoryPort {
 
 	async setName(id: string, name: string): Promise<void> {
 		const cached = this.sessions.get(id)
-		if (!cached) throw new Error(`Session with id ${id} not found`)
+		if (!cached) {
+			throw new Error(`Session with id ${id} not found`)
+		}
 		cached.session.name = name
 		cached.session.updatedAt = Date.now()
 	}

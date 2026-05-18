@@ -6,7 +6,9 @@ class InMemoryContextRepository implements ContextRepositoryPort {
 
 	async get(sessionId: string): Promise<Array<ConversationEntry>> {
 		const entries = this.contexts.get(sessionId)
-		if (!entries) return []
+		if (!entries) {
+			return []
+		}
 		return [...entries]
 	}
 

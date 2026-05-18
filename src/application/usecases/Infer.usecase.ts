@@ -1,7 +1,6 @@
 import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
 import type ContextRepositoryPort from '@application/ports/ContextRepository.port'
 import type EventBusPort from '@application/ports/EventBus.port'
-import { Channel, type Envelope } from '@application/ports/EventBus.port'
 import type ProviderPort from '@application/ports/Provider.port'
 import type ProviderRegistryPort from '@application/ports/ProviderRegistry.port'
 import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
@@ -17,8 +16,6 @@ type PendingToolCall = {
 }
 
 class InferUseCase {
-	private readonly channel = Channel.INFERENCE
-
 	constructor(
 		readonly sessionRepository: SessionRepositoryPort,
 		readonly contextRepository: ContextRepositoryPort,
@@ -48,7 +45,7 @@ class InferUseCase {
 			ts: Date.now(),
 		}
 
-		await this.publish({ type: 'prompt', ...entry })
+		this.eventBus.publish({ type: 'prompt', ...entry })
 		await this.contextRepository.append(sessionId, entry)
 
 		while (true) {
@@ -73,7 +70,7 @@ class InferUseCase {
 			)) {
 				switch (event.type) {
 					case 'thought': {
-						this.publish({
+						this.eventBus.publish({
 							id: crypto.randomUUID(),
 							role: 'assistant',
 							type: 'thought',
@@ -85,7 +82,7 @@ class InferUseCase {
 
 					case 'token': {
 						pendingTokens.push(event.content)
-						this.publish({
+						this.eventBus.publish({
 							id: crypto.randomUUID(),
 							role: 'assistant',
 							type: 'token',
@@ -104,7 +101,7 @@ class InferUseCase {
 						entry = { id, role, content, toolCalls: event.toolCalls, ts }
 						pendingTokens = []
 
-						await this.publish({
+						this.eventBus.publish({
 							id,
 							role,
 							type: 'tool-call',
@@ -141,7 +138,7 @@ class InferUseCase {
 
 					entry = { id, role, name, content, ts }
 
-					await this.publish({ id, role, type, name, content, code, ts })
+					this.eventBus.publish({ id, role, type, name, content, code, ts })
 					await this.contextRepository.append(sessionId, entry)
 				}
 
@@ -168,10 +165,6 @@ class InferUseCase {
 		}
 
 		return context
-	}
-
-	private async publish(event: Envelope): Promise<void> {
-		await this.eventBus.publish(this.channel, event)
 	}
 }
 

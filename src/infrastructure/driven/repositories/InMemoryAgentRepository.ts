@@ -6,7 +6,9 @@ class InMemoryAgentRepository implements AgentRepositoryPort {
 
 	async get(id: string): Promise<Agent> {
 		const agent = this.agents.get(id)
-		if (!agent) throw new Error(`Agent with id ${id} not found`)
+		if (!agent) {
+			throw new Error(`Agent with id ${id} not found`)
+		}
 		return agent
 	}
 

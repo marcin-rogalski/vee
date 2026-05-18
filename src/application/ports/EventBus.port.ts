@@ -1,19 +1,6 @@
-export enum Channel {
-	INFERENCE = 'inference',
-	SESSION = 'session',
-	APP = 'app',
-}
-
-type HandlerFn = (envelope: Envelope) => void
-type UnsubscribeFn = () => void
-
 interface EventBusPort {
-	publish(channel: Channel, envelope: Envelope): Promise<void>
-	subscribe(
-		channel: Channel,
-		eventType: Envelope['type'],
-		handler: HandlerFn,
-	): UnsubscribeFn
+	publish(envelope: Envelope): void
+	subscribe(): AsyncGenerator<Envelope> & { unsubscribe: () => void }
 }
 
 export default EventBusPort
@@ -39,4 +26,16 @@ export type Envelope = {
 	  }
 	| { role: 'system'; type: 'done' }
 	| { role: 'system'; type: 'error'; message: string }
+
+	// Session CRUD events
+	| { role: 'system'; type: 'session-created'; sessionId: string; name: string }
+	| { role: 'system'; type: 'session-deleted'; sessionId: string }
+
+	// Provider CRUD events
+	| { role: 'system'; type: 'provider-saved'; providerId: string; name: string }
+	| { role: 'system'; type: 'provider-deleted'; providerId: string }
+
+	// Agent CRUD events
+	| { role: 'system'; type: 'agent-saved'; agentId: string; name: string }
+	| { role: 'system'; type: 'agent-deleted'; agentId: string }
 )
