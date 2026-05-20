@@ -111,4 +111,35 @@ describe('AgentUpsert', () => {
 
 		expect(mockRes.sendStatus).toHaveBeenCalledWith(204)
 	})
+
+	it('returns 500 and json error when useCase.execute rejects', async () => {
+		mockUseCase.execute.mockRejectedValue(new Error('Upsert failed'))
+
+		const handlers: RequestHandler[] = endpoint.toHandlers()
+		const dispatchMiddleware = handlers[1]
+
+		const agentBody = {
+			id: 'agent-1',
+			name: 'Test Agent',
+		}
+
+		const mockReq = {
+			params: {},
+			body: agentBody,
+			query: {},
+			on: vi.fn(),
+		} as any
+		const mockRes = {
+			sendStatus: vi.fn(),
+			status: vi.fn().mockReturnThis(),
+			json: vi.fn(),
+		} as any
+
+		const next = vi.fn()
+		const promise = dispatchMiddleware?.(mockReq, mockRes, next)
+		await promise
+
+		expect(mockRes.status).toHaveBeenCalledWith(500)
+		expect(mockRes.json).toHaveBeenCalled()
+	})
 })

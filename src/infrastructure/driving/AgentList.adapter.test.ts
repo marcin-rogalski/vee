@@ -76,4 +76,54 @@ describe('AgentList', () => {
 		expect(mockRes.status).toHaveBeenCalledWith(200)
 		expect(mockRes.json).toHaveBeenCalled()
 	})
+
+	it('returns 200 with empty agents array when no agents found', async () => {
+		mockUseCase.execute.mockResolvedValue([])
+
+		const handlers: RequestHandler[] = endpoint.toHandlers()
+		const dispatchMiddleware = handlers[1]
+
+		const mockReq = {
+			params: {},
+			body: {},
+			query: {},
+			on: vi.fn(),
+		} as any
+		const mockRes = {
+			status: vi.fn().mockReturnThis(),
+			json: vi.fn(),
+		} as any
+
+		const next = vi.fn()
+		const promise = dispatchMiddleware?.(mockReq, mockRes, next)
+		await promise
+
+		expect(mockRes.status).toHaveBeenCalledWith(200)
+		expect(mockRes.json).toHaveBeenCalledWith({ agents: [] })
+	})
+
+	it('returns 500 when useCase throws', async () => {
+		mockUseCase.execute.mockRejectedValue(new Error('List failed'))
+
+		const handlers: RequestHandler[] = endpoint.toHandlers()
+		const dispatchMiddleware = handlers[1]
+
+		const mockReq = {
+			params: {},
+			body: {},
+			query: {},
+			on: vi.fn(),
+		} as any
+		const mockRes = {
+			status: vi.fn().mockReturnThis(),
+			json: vi.fn(),
+		} as any
+
+		const next = vi.fn()
+		const promise = dispatchMiddleware?.(mockReq, mockRes, next)
+		await promise
+
+		expect(mockRes.status).toHaveBeenCalledWith(500)
+		expect(mockRes.json).toHaveBeenCalled()
+	})
 })

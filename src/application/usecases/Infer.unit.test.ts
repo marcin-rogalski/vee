@@ -37,8 +37,11 @@ let mockToolRegistry: ToolRegistryPort
 let mockEventBus: EventBusPort
 let mockProvider: ProviderPort
 let useCase: InferUseCase
+let inferCallCount = 0
 
 beforeEach(() => {
+	inferCallCount = 0
+
 	mockAgentRepository = {
 		get: vi.fn().mockResolvedValue(mockAgent),
 		list: vi.fn().mockResolvedValue([]),
@@ -97,7 +100,7 @@ beforeEach(() => {
 	} as unknown as ToolRegistryPort
 
 	mockEventBus = {
-		publish: vi.fn().mockResolvedValue(undefined),
+		publish: vi.fn().mockReturnValue(undefined),
 		subscribe: vi.fn().mockReturnValue(() => {}),
 	} as unknown as EventBusPort
 
@@ -107,8 +110,35 @@ beforeEach(() => {
 		countTokens: vi.fn().mockReturnValue(10),
 		shouldCompact: vi.fn().mockReturnValue(false),
 		compact: vi.fn().mockResolvedValue([]),
-		infer: vi.fn().mockImplementation(function* () {
-			yield { type: 'token', content: 'Hello, world!' }
+		infer: vi.fn().mockImplementation(() => {
+			inferCallCount++
+			if (inferCallCount > 1) {
+				// Return empty iterator on subsequent calls to prevent infinite loop
+				return {
+					[Symbol.asyncIterator]() {
+						return {
+							async next() {
+								return { done: true }
+							},
+						}
+					},
+				}
+			}
+
+			const events = [{ type: 'token', content: 'Hello, world!' }]
+			let index = 0
+			return {
+				[Symbol.asyncIterator]() {
+					return this
+				},
+				async next() {
+					if (index >= events.length) {
+						return { done: true }
+					}
+					const value = events[index++]
+					return { value, done: false }
+				},
+			}
 		}),
 	} as unknown as ProviderPort
 
@@ -164,7 +194,6 @@ describe('InferUseCase', () => {
 	it('publishes prompt event to event bus', async () => {
 		await useCase.execute('Hello', 'agent-1', 'session-1')
 		expect(mockEventBus.publish).toHaveBeenCalledWith(
-			'inference',
 			expect.objectContaining({ type: 'prompt' }),
 		)
 	})
@@ -172,7 +201,6 @@ describe('InferUseCase', () => {
 	it('publishes token events', async () => {
 		await useCase.execute('Hello', 'agent-1', 'session-1')
 		expect(mockEventBus.publish).toHaveBeenCalledWith(
-			'inference',
 			expect.objectContaining({ type: 'token' }),
 		)
 	})
@@ -248,18 +276,267 @@ describe('InferUseCase', () => {
 	})
 
 	it('joins pendingTokens into content before tool-call entry creation', async () => {
-		// With no tool calls, the final assistant entry should have joined tokens
-		const publishCalls = (mockEventBus.publish as any).mock.calls as Array<
-			[event: string, envelope: { role?: string; type?: string }]
-		>
-		const assistantEntries = publishCalls.filter((call) => {
-			const envelope = call[1]
+		// With no tool calls, tokens are published individually but no assistant entry is created
+		// Capture publish calls after useCase.execute to see events
+		await useCase.execute('Hello', 'agent-1', 'session-1')
+		const publishCalls = (mockEventBus.publish as any).mock.calls
+		// Count assistant token events
+		const assistantTokenEvents = publishCalls.filter((call: any) => {
+			const envelope = call[0]
 			return (
 				envelope?.role === 'assistant' &&
-				envelope?.type !== 'token' &&
-				envelope?.type !== 'thought'
+				envelope?.type === 'token'
 			)
 		})
-		expect(assistantEntries.length).toBeGreaterThanOrEqual(0)
+		// Verify token events were published
+		expect(assistantTokenEvents).toHaveLength(1) // 'Hello, world!' (single token from mock)
+	})
+
+	it('executes single tool call and publishes tool-call and tool-response events', async () => {
+		const mockToolCall = {
+			name: 'read-file',
+			arguments: JSON.stringify({ path: '/test.txt' }),
+		}
+
+		// Track calls to prevent infinite loop
+		let toolCallTestCallCount = 0
+		const mockInfer = vi.fn()
+		mockInfer.mockImplementation(() => {
+			toolCallTestCallCount++
+			if (toolCallTestCallCount > 1) {
+				// Return empty iterator on subsequent calls to prevent infinite loop
+				return {
+					[Symbol.asyncIterator]() {
+						return {
+							async next() {
+								return { done: true }
+							},
+						}
+					},
+				}
+			}
+
+			const events = [
+				{ type: 'token', content: 'I ' },
+				{ type: 'token', content: 'will ' },
+				{ type: 'token', content: 'read ' },
+				{ type: 'token', content: 'the ' },
+				{ type: 'token', content: 'file.' },
+				{ type: 'tool-call', toolCalls: [mockToolCall] },
+			]
+			let index = 0
+			return {
+				[Symbol.asyncIterator]() {
+					return this
+				},
+				async next() {
+					if (index >= events.length) {
+						return { done: true }
+					}
+					const value = events[index++]
+					return { value, done: false }
+				},
+			}
+		})
+		;(mockProvider.infer as any).mockImplementation(() => mockInfer())
+
+		// Setup mock to track tool execution call arguments
+		let executeCallCount = 0
+		;(mockToolRegistry.get as any).mockReturnValue({
+			id: 'read-file',
+			description: 'Read a file',
+			definition: {
+				name: 'read-file',
+				description: 'Read a file',
+				parameters: '{}',
+			},
+			execute: vi.fn().mockResolvedValue({ content: 'file content', code: undefined }),
+		})
+
+		await useCase.execute('Hello', 'agent-1', 'session-1')
+
+		// Verify tool-call event was published
+		const publishCalls = (mockEventBus.publish as any).mock.calls
+		const toolCallEvent = publishCalls.find((call: any) => call[0]?.type === 'tool-call')
+		expect(toolCallEvent).toBeDefined()
+		expect(toolCallEvent[0].toolCalls).toEqual([mockToolCall])
+
+		// Verify tool execution was called with JSON string argument
+		expect(mockToolRegistry.get).toHaveBeenCalledWith('read-file')
+		expect(mockToolRegistry.get().execute).toHaveBeenCalledWith(JSON.stringify({ path: '/test.txt' }))
+
+		// Verify tool-response event was published
+		const toolResponseEvent = publishCalls.find((call: any) => call[0]?.type === 'tool-response')
+		expect(toolResponseEvent).toBeDefined()
+		expect(toolResponseEvent[0].content).toBe('file content')
+
+		// Verify context repository was updated with tool call and response entries
+		expect(mockContextRepository.append).toHaveBeenCalledTimes(3) // user prompt + tool call + tool response
+	})
+
+	it('executes multiple tool calls concurrently', async () => {
+		const mockToolCall1 = {
+			name: 'read-file',
+			arguments: JSON.stringify({ path: '/test1.txt' }),
+		}
+		const mockToolCall2 = {
+			name: 'read-file',
+			arguments: JSON.stringify({ path: '/test2.txt' }),
+		}
+
+		let multipleToolCallsTestCallCount = 0
+		const mockInfer = vi.fn()
+		mockInfer.mockImplementation(() => {
+			multipleToolCallsTestCallCount++
+			if (multipleToolCallsTestCallCount > 1) {
+				// Return empty iterator on subsequent calls to prevent infinite loop
+				return {
+					[Symbol.asyncIterator]() {
+						return {
+							async next() {
+								return { done: true }
+							},
+						}
+					},
+				}
+			}
+
+			const events = [
+				{ type: 'tool-call', toolCalls: [mockToolCall1, mockToolCall2] },
+			]
+			let index = 0
+			return {
+				[Symbol.asyncIterator]() {
+					return this
+				},
+				async next() {
+					if (index >= events.length) {
+						return { done: true }
+					}
+					const value = events[index++]
+					return { value, done: false }
+				},
+			}
+		})
+		;(mockProvider.infer as any).mockImplementation(() => mockInfer())
+
+		// Mock two separate tool executions with JSON string arguments
+		const mockExecute1 = vi.fn().mockResolvedValue({ content: 'content1', code: undefined })
+		const mockExecute2 = vi.fn().mockResolvedValue({ content: 'content2', code: undefined })
+
+		let executeCallCount = 0
+		;(mockToolRegistry.get as any).mockReturnValue({
+			id: 'read-file',
+			description: 'Read a file',
+			definition: {
+				name: 'read-file',
+				description: 'Read a file',
+				parameters: '{}',
+			},
+			execute: vi.fn().mockImplementation((args: string) => {
+				executeCallCount++
+				if (executeCallCount === 1) {
+					return mockExecute1(args)
+				} else {
+					return mockExecute2(args)
+				}
+			}),
+		})
+
+		await useCase.execute('Hello', 'agent-1', 'session-1')
+
+		// Verify both tool calls were executed with JSON string arguments
+		expect(mockExecute1).toHaveBeenCalledWith(JSON.stringify({ path: '/test1.txt' }))
+		expect(mockExecute2).toHaveBeenCalledWith(JSON.stringify({ path: '/test2.txt' }))
+
+		// Verify tool-response events were published for each tool call
+		const publishCalls = (mockEventBus.publish as any).mock.calls
+		const toolResponseEvents = publishCalls.filter((call: any) => call[0]?.type === 'tool-response')
+		expect(toolResponseEvents).toHaveLength(2)
+	})
+
+	it('handles tool execution error with proper event publishing', async () => {
+		const mockToolCall = {
+			name: 'read-file',
+			arguments: JSON.stringify({ path: '/error.txt' }),
+		}
+
+		let toolExecutionErrorTestCallCount = 0
+		const mockInfer = vi.fn()
+		mockInfer.mockImplementation(() => {
+			toolExecutionErrorTestCallCount++
+			if (toolExecutionErrorTestCallCount > 1) {
+				// Return empty iterator on subsequent calls to prevent infinite loop
+				return {
+					[Symbol.asyncIterator]() {
+						return {
+							async next() {
+								return { done: true }
+							},
+						}
+					},
+				}
+			}
+
+			const events = [
+				{ type: 'tool-call', toolCalls: [mockToolCall] },
+			]
+			let index = 0
+			return {
+				[Symbol.asyncIterator]() {
+					return this
+				},
+				async next() {
+					if (index >= events.length) {
+						return { done: true }
+					}
+					const value = events[index++]
+					return { value, done: false }
+				},
+			}
+		})
+		;(mockProvider.infer as any).mockImplementation(() => mockInfer())
+
+		// Mock tool execution to throw an error
+		const error = new Error('File not found')
+		;(mockToolRegistry.get as any).mockReturnValue({
+			id: 'read-file',
+			description: 'Read a file',
+			definition: {
+				name: 'read-file',
+				description: 'Read a file',
+				parameters: '{}',
+			},
+			execute: vi.fn().mockRejectedValue(error),
+		})
+
+		await expect(useCase.execute('Hello', 'agent-1', 'session-1')).rejects.toThrow('File not found')
+	})
+
+	it('propagates provider.infer() errors', async () => {
+		;(mockProvider.infer as any).mockImplementation(() => {
+			throw new Error('Provider error')
+		})
+
+		await expect(useCase.execute('Hello', 'agent-1', 'session-1')).rejects.toThrow('Provider error')
+	})
+
+	it('handles empty toolIds array correctly', async () => {
+		const emptyToolAgent = {
+			...mockAgent,
+			toolIds: [],
+		}
+		;(mockAgentRepository.get as any).mockResolvedValue(emptyToolAgent)
+
+		await useCase.execute('Hello', 'agent-1', 'session-1')
+
+		// Verify no tools were retrieved
+		expect(mockToolRegistry.get).not.toHaveBeenCalled()
+		// With empty toolIds, only user prompt is appended (no assistant entry since no tool calls or tokens)
+		expect(mockContextRepository.append).toHaveBeenCalledTimes(1)
+		expect(mockContextRepository.append).toHaveBeenCalledWith(
+			'session-1',
+			expect.objectContaining({ role: 'user' }),
+		)
 	})
 })

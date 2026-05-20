@@ -9,7 +9,6 @@ import type ToolRegistryPort from '@application/ports/ToolRgistry.port'
 import type ConversationEntry from '@domain/ConversationEntry'
 
 type PendingToolCall = {
-	index: number
 	name: string
 	content: string
 	code: number | undefined
@@ -111,25 +110,20 @@ class InferUseCase {
 						await this.contextRepository.append(sessionId, entry)
 
 						pendingToolCalls.push(
-							...event.toolCalls.map(
-								async ({ name, arguments: args }, index) => {
-									const tool = this.toolRepository.get(name)
-									const result = await tool.execute(args)
+							...event.toolCalls.map(async ({ name, arguments: args }) => {
+								const tool = this.toolRepository.get(name)
+								const result = await tool.execute(args)
 
-									return { index, name, ...result }
-								},
-							),
+								return { name, ...result }
+							}),
 						)
 					}
 				}
 			}
 
 			if (pendingToolCalls.length) {
-				while (pendingToolCalls.length) {
-					const { index, name, content, code } =
-						await Promise.race(pendingToolCalls)
-
-					pendingToolCalls.splice(index, 1)
+				for (let i = 0; i < pendingToolCalls.length; i++) {
+					const { name, content, code } = await Promise.race(pendingToolCalls)
 
 					const id = crypto.randomUUID()
 					const role = 'system'

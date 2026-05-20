@@ -98,4 +98,29 @@ describe('SessionCreate', () => {
 		expect(mockRes.status).toHaveBeenCalledWith(200)
 		expect(mockRes.json).toHaveBeenCalled()
 	})
+
+	it('returns 500 when useCase throws', async () => {
+		mockUseCase.execute.mockRejectedValue(new Error('Session creation failed'))
+
+		const handlers = endpoint.toHandlers()
+		const dispatchMiddleware = handlers[1]!
+
+		const mockReq = {
+			params: {},
+			body: {},
+			query: {},
+			on: vi.fn(),
+		} as any
+		const mockRes = {
+			status: vi.fn().mockReturnThis(),
+			json: vi.fn(),
+		} as any
+
+		const next = vi.fn()
+		const promise = dispatchMiddleware(mockReq, mockRes, next)
+		await promise
+
+		expect(mockRes.status).toHaveBeenCalledWith(500)
+		expect(mockRes.json).toHaveBeenCalled()
+	})
 })

@@ -13,6 +13,8 @@ class InMemoryEventBus implements EventBusPort {
 	subscribe(): AsyncGenerator<Envelope> & { unsubscribe: () => void } {
 		const subscriber = new Subscriber()
 
+		this.subscribers.push(subscriber)
+
 		const unsubscribe = () => {
 			subscriber.reject(new Error('Unsubscribed'))
 

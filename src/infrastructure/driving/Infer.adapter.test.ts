@@ -61,7 +61,9 @@ describe('Infer', () => {
 			body: { prompt: 'hi', agentId: 'a1', sessionId: 's1' },
 			query: {},
 			on: vi.fn().mockImplementation((event: string, cb: () => void) => {
-				if (event === 'close') closeCallback = cb
+				if (event === 'close') {
+					closeCallback = cb
+				}
 			}),
 		} as any
 		const mockRes = {
@@ -76,5 +78,68 @@ describe('Infer', () => {
 		await promise
 
 		expect(mockUseCase.execute).toHaveBeenCalledWith('hi', 'a1', 's1')
+	})
+
+	it('returns 204 when useCase returns void', async () => {
+		mockUseCase.execute.mockResolvedValue(undefined)
+
+		const handlers: RequestHandler[] = endpoint.toHandlers()
+		const dispatchMiddleware = handlers[1]
+
+		let closeCallback: () => void = () => {}
+		const mockReq = {
+			params: {},
+			body: { prompt: 'hi', agentId: 'a1', sessionId: 's1' },
+			query: {},
+			on: vi.fn().mockImplementation((event: string, cb: () => void) => {
+				if (event === 'close') {
+					closeCallback = cb
+				}
+			}),
+		} as any
+		const mockRes = {
+			sendStatus: vi.fn(),
+			status: vi.fn().mockReturnThis(),
+			json: vi.fn(),
+		} as any
+
+		const next = vi.fn()
+		const promise = dispatchMiddleware?.(mockReq, mockRes, next)
+		closeCallback()
+		await promise
+
+		expect(mockRes.sendStatus).toHaveBeenCalledWith(204)
+	})
+
+	it('returns 500 when useCase throws', async () => {
+		mockUseCase.execute.mockRejectedValue(new Error('Inference failed'))
+
+		const handlers: RequestHandler[] = endpoint.toHandlers()
+		const dispatchMiddleware = handlers[1]
+
+		let closeCallback: () => void = () => {}
+		const mockReq = {
+			params: {},
+			body: { prompt: 'hi', agentId: 'a1', sessionId: 's1' },
+			query: {},
+			on: vi.fn().mockImplementation((event: string, cb: () => void) => {
+				if (event === 'close') {
+					closeCallback = cb
+				}
+			}),
+		} as any
+		const mockRes = {
+			sendStatus: vi.fn(),
+			status: vi.fn().mockReturnThis(),
+			json: vi.fn(),
+		} as any
+
+		const next = vi.fn()
+		const promise = dispatchMiddleware?.(mockReq, mockRes, next)
+		closeCallback()
+		await promise
+
+		expect(mockRes.status).toHaveBeenCalledWith(500)
+		expect(mockRes.json).toHaveBeenCalled()
 	})
 })

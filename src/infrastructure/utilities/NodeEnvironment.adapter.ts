@@ -17,7 +17,7 @@ class NodeEnvironment {
 		SESSION_REPOSITORY_FILE: z.string().default('sessions.json'),
 
 		// ports
-		SEVER_PORT: z.number().default(3000),
+		SEVER_PORT: z.coerce.number().default(3000),
 	})
 
 	public readonly mode: 'development' | 'production' | 'test'

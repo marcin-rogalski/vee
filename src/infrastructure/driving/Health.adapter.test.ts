@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: it is expected in tests */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import Health from './Health.adapter'
+import ExpressEndpoint from '@utilities/ExpressEndpoint.adapter'
 
 describe('Health', () => {
 	let endpoint: import('@utilities/ExpressEndpoint.adapter').IEndpoint
@@ -33,7 +34,9 @@ describe('Health', () => {
 			body: {},
 			query: {},
 			on: vi.fn().mockImplementation((event: string, cb: () => void) => {
-				if (event === 'close') closeCallback = cb
+				if (event === 'close') {
+					closeCallback = cb
+				}
 			}),
 		} as any
 		const mockRes = {
@@ -48,5 +51,35 @@ describe('Health', () => {
 
 		expect(mockRes.status).toHaveBeenCalledWith(200)
 		expect(mockRes.json).toHaveBeenCalledWith({ status: 'ok' })
+	})
+
+	it('returns 500 when handler throws', async () => {
+		// This test verifies the ExpressEndpoint error wrapper works
+		const failingEndpoint = ExpressEndpoint.createEndpoint(
+			'GET',
+			'/health-error',
+			{},
+			async () => {
+				throw new Error('Health check failed')
+			},
+		)
+
+		const mockReq = {
+			params: {},
+			body: {},
+			query: {},
+			on: vi.fn(),
+		} as any
+		const mockRes = {
+			status: vi.fn().mockReturnThis(),
+			json: vi.fn(),
+		} as any
+
+		const next = vi.fn()
+		const promise = failingEndpoint.toHandlers()[1](mockReq, mockRes, next)
+		await promise
+
+		expect(mockRes.status).toHaveBeenCalledWith(500)
+		expect(mockRes.json).toHaveBeenCalled()
 	})
 })

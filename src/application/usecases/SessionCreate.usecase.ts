@@ -8,8 +8,10 @@ class SessionCreateUseCase {
 	) {}
 
 	async execute(name?: string): Promise<string> {
-		const session = await this.sessionRepository.create(name ?? '')
-		await this.eventBus.publish({
+		const safeName = typeof name === 'string' ? name : ''
+		const session = await this.sessionRepository.create(safeName)
+
+		this.eventBus.publish({
 			id: crypto.randomUUID(),
 			ts: Date.now(),
 			role: 'system',
@@ -17,6 +19,7 @@ class SessionCreateUseCase {
 			sessionId: session.id,
 			name: session.name,
 		})
+
 		return session.id
 	}
 }

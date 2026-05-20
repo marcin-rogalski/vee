@@ -95,4 +95,30 @@ describe('SessionDelete', () => {
 
 		expect(mockRes.sendStatus).toHaveBeenCalledWith(204)
 	})
+
+	it('returns 500 when useCase throws', async () => {
+		mockUseCase.execute.mockRejectedValue(new Error('Delete failed'))
+
+		const handlers = endpoint.toHandlers()
+		const dispatchMiddleware = handlers[1]!
+
+		const mockReq = {
+			params: { id: 'session-123' },
+			body: {},
+			query: {},
+			on: vi.fn(),
+		} as any
+		const mockRes = {
+			sendStatus: vi.fn(),
+			status: vi.fn().mockReturnThis(),
+			json: vi.fn(),
+		} as any
+
+		const next = vi.fn()
+		const promise = dispatchMiddleware(mockReq, mockRes, next)
+		await promise
+
+		expect(mockRes.status).toHaveBeenCalledWith(500)
+		expect(mockRes.json).toHaveBeenCalled()
+	})
 })

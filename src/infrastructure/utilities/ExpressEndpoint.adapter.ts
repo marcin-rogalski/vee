@@ -197,12 +197,21 @@ class ExpressEndpoint {
 
 			req.on('close', () => controller.abort())
 
-			const output = await handler(
-				req.params as HttpParameters<TPath>,
-				req.body as ExtractBody<TSchemas>,
-				req.query as ExtractQuery<TSchemas>,
-				controller.signal,
-			)
+			let output: unknown
+			try {
+				output = await handler(
+					req.params as HttpParameters<TPath>,
+					req.body as ExtractBody<TSchemas>,
+					req.query as ExtractQuery<TSchemas>,
+					controller.signal,
+				)
+			} catch (error) {
+				res.status(500).json({
+					error: 'Internal server error',
+					details: error instanceof Error ? error.message : 'Unknown error',
+				})
+				return
+			}
 
 			if (output === undefined || output === null) {
 				res.sendStatus(204)
@@ -218,11 +227,19 @@ class ExpressEndpoint {
 				res.setHeader('Cache-Control', 'no-cache')
 				res.setHeader('Connection', 'keep-alive')
 
-				for await (const event of output as unknown as AsyncGenerator<{
-					type: string
-					data: unknown
-				}>) {
-					res.write(`data: ${JSON.stringify(event)}\n\n`)
+				try {
+					for await (const event of output as unknown as AsyncGenerator<{
+						type: string
+						data: unknown
+					}>) {
+						res.write(`data: ${JSON.stringify(event)}\n\n`)
+					}
+				} catch (error) {
+					res.status(500).json({
+						error: 'Internal server error',
+						details: error instanceof Error ? error.message : 'Unknown error',
+					})
+					return
 				}
 
 				res.end()

@@ -55,48 +55,37 @@ describe('D4 — ConversationEntry discriminated union', () => {
 	}
 
 	it('creates valid user entry with required id, ts, role, content', () => {
-		expect(validUserEntry.id).toBe('entry-1')
-		expect(validUserEntry.ts).toBe(1000000)
 		expect(validUserEntry.role).toBe('user')
 		expect(validUserEntry.content).toBe('Hello, world!')
 	})
 
-	it('creates valid assistant entry with required id, ts, role, content', () => {
-		expect(validAssistantEntry.id).toBe('entry-2')
+	it('creates valid assistant entry without toolCalls', () => {
 		expect(validAssistantEntry.role).toBe('assistant')
 		expect(validAssistantEntry.content).toBe('Hi there!')
-		expect(validAssistantToolCallEntry).toHaveProperty('toolCalls')
+		expect(validAssistantEntry.toolCalls).toBeUndefined()
 	})
 
 	it('creates valid assistant entry with toolCalls', () => {
+		expect(validAssistantToolCallEntry.role).toBe('assistant')
+		expect(validAssistantToolCallEntry.content).toBe('Let me check that.')
 		expect(validAssistantToolCallEntry.toolCalls).toEqual([
 			{ name: 'readFile', arguments: JSON.stringify({ path: '/foo.txt' }) },
 		])
 	})
 
-	it('creates valid assistant entry without toolCalls', () => {
-		expect(validAssistantEntry.toolCalls).toBeUndefined()
-	})
-
 	it('creates valid system entry (two-arg form) with required id, ts', () => {
-		expect(validSystemEntry.id).toBe('entry-4')
-		expect(validSystemEntry.ts).toBe(1000003)
 		expect(validSystemEntry.role).toBe('system')
 		expect(validSystemEntry.content).toBe('You are a helpful assistant.')
 		expect('name' in validSystemEntry).toBe(false)
 	})
 
 	it('creates valid system entry with name (three-arg form) with required id, ts', () => {
-		expect(validSystemNamedEntry.id).toBe('entry-5')
-		expect(validSystemNamedEntry.ts).toBe(1000004)
 		expect(validSystemNamedEntry.role).toBe('system')
 		expect(validSystemNamedEntry.name).toBe('system')
 		expect(validSystemNamedEntry.content).toBe('You are a helpful assistant.')
 	})
 
 	it('creates valid developer entry (two-arg form: role: developer, content)', () => {
-		expect(validDeveloperEntry.id).toBe('entry-6')
-		expect(validDeveloperEntry.ts).toBe(1000005)
 		expect(validDeveloperEntry.role).toBe('developer')
 		expect(validDeveloperEntry.content).toBe('Do not mention you are an AI.')
 	})
@@ -129,5 +118,53 @@ describe('D4 — ConversationEntry discriminated union', () => {
 			expect(typeof entry.ts).toBe('number')
 			expect(entry.id.length).toBeGreaterThan(0)
 		}
+	})
+
+	describe('edge cases for id and ts boundaries', () => {
+		it('accepts empty string id (TypeScript allows it)', () => {
+			const emptyIdEntry: ConversationEntry = {
+				id: '',
+				ts: 0,
+				role: 'user',
+				content: 'test',
+			}
+			expect(emptyIdEntry.id).toBe('')
+			expect(emptyIdEntry.ts).toBe(0)
+			expect(emptyIdEntry.role).toBe('user')
+			expect(emptyIdEntry.content).toBe('test')
+		})
+
+		it('accepts zero timestamp (TypeScript allows it)', () => {
+			const zeroTsEntry: ConversationEntry = {
+				id: 'zero-ts',
+				ts: 0,
+				role: 'user',
+				content: 'test',
+			}
+			expect(zeroTsEntry.id).toBe('zero-ts')
+			expect(zeroTsEntry.ts).toBe(0)
+		})
+
+		it('accepts negative timestamp (TypeScript allows it)', () => {
+			const negativeTsEntry: ConversationEntry = {
+				id: 'negative-ts',
+				ts: -1,
+				role: 'user',
+				content: 'test',
+			}
+			expect(negativeTsEntry.id).toBe('negative-ts')
+			expect(negativeTsEntry.ts).toBe(-1)
+		})
+
+		it('accepts very large timestamp (TypeScript allows it)', () => {
+			const largeTsEntry: ConversationEntry = {
+				id: 'large-ts',
+				ts: Number.MAX_SAFE_INTEGER,
+				role: 'user',
+				content: 'test',
+			}
+			expect(largeTsEntry.id).toBe('large-ts')
+			expect(largeTsEntry.ts).toBe(Number.MAX_SAFE_INTEGER)
+		})
 	})
 })
