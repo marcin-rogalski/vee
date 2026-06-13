@@ -35,7 +35,9 @@ describe('ReadFileAdapter', () => {
 		await fs.writeFile(testFile, testContent)
 
 		// Use tilde path
-		const result = await tool.execute(JSON.stringify({ path: '~/vee-tilde-test/test.txt' }))
+		const result = await tool.execute(
+			JSON.stringify({ path: '~/vee-tilde-test/test.txt' }),
+		)
 
 		expect(result.content).toBe(testContent)
 

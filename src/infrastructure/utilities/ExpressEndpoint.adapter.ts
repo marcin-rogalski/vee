@@ -1,6 +1,8 @@
 /** biome-ignore-all lint/complexity/noBannedTypes: usage of {} is intended here */
 /** biome-ignore-all lint/complexity/noStaticOnlyClass: expected here to align with standards */
 /** biome-ignore-all lint/suspicious/noExplicitAny: usage of any is intneded here */
+
+import { AppError } from '@domain/errors'
 import type { RequestHandler } from 'express'
 import Zod from 'zod'
 
@@ -206,6 +208,15 @@ class ExpressEndpoint {
 					controller.signal,
 				)
 			} catch (error) {
+				if (error instanceof AppError) {
+					res.status(error.statusCode).json({
+						error: error.message,
+						code: error.code,
+						details: error.metadata,
+					})
+					return
+				}
+
 				res.status(500).json({
 					error: 'Internal server error',
 					details: error instanceof Error ? error.message : 'Unknown error',
@@ -235,6 +246,15 @@ class ExpressEndpoint {
 						res.write(`data: ${JSON.stringify(event)}\n\n`)
 					}
 				} catch (error) {
+					if (error instanceof AppError) {
+						res.status(error.statusCode).json({
+							error: error.message,
+							code: error.code,
+							details: error.metadata,
+						})
+						return
+					}
+
 					res.status(500).json({
 						error: 'Internal server error',
 						details: error instanceof Error ? error.message : 'Unknown error',

@@ -1,5 +1,6 @@
 import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
 import type Agent from '@domain/Agent'
+import { NotFoundError } from '@domain/errors'
 
 class InMemoryAgentRepository implements AgentRepositoryPort {
 	private agents: Map<string, Agent> = new Map()
@@ -7,7 +8,7 @@ class InMemoryAgentRepository implements AgentRepositoryPort {
 	async get(id: string): Promise<Agent> {
 		const agent = this.agents.get(id)
 		if (!agent) {
-			throw new Error(`Agent with id ${id} not found`)
+			throw new NotFoundError('Agent', id)
 		}
 		return agent
 	}

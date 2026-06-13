@@ -1,5 +1,7 @@
 import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
 import type EventBusPort from '@application/ports/EventBus.port'
+import type Agent from '@domain/Agent'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AgentUpsertUseCase from './AgentUpsert.usecase'
 
@@ -102,15 +104,20 @@ describe('UC3 — AgentUpsert use case', () => {
 			toolIds: [],
 		}
 		await useCase.execute(agent)
-		const envelope = (publishSpy.mock.calls[0] as [object])[0]
-		expect(envelope).toHaveProperty('id')
-		expect(envelope).toHaveProperty('ts')
-		expect(typeof (envelope as any).id).toBe('string')
-		expect(typeof (envelope as any).ts).toBe('number')
-		expect((envelope as any).type).toBe('agent-saved')
-		expect((envelope as any).agentId).toBe('agent-2')
-		expect((envelope as any).name).toBe('Another Agent')
-		expect((envelope as any).role).toBe('system')
+		const envelope = publishSpy.mock.calls[0]?.[0] as {
+			id: string
+			ts: number
+			type: 'agent-saved'
+			agentId: string | undefined
+			name: string | undefined
+			role: 'system'
+		}
+		expect(envelope.id).toBeTypeOf('string')
+		expect(envelope.ts).toBeTypeOf('number')
+		expect(envelope.type).toBe('agent-saved')
+		expect(envelope.agentId).toBe('agent-2')
+		expect(envelope.name).toBe('Another Agent')
+		expect(envelope.role).toBe('system')
 	})
 
 	it('propagates errors from eventBus.publish', async () => {
@@ -134,13 +141,20 @@ describe('UC3 — AgentUpsert use case', () => {
 	it('handles empty agent object — save called with partial agent, event published with empty strings', async () => {
 		const saveSpy = vi.spyOn(mockRepository, 'save')
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-		const emptyAgent = {} as any
+		const emptyAgent: Agent = {
+			id: '',
+			name: '',
+			systemPrompt: '',
+			providerId: '',
+			providerConfiguration: {},
+			toolIds: [],
+		}
 		await useCase.execute(emptyAgent)
 		expect(saveSpy).toHaveBeenCalledWith(emptyAgent)
 		expect(publishSpy).toHaveBeenCalledWith(
 			expect.objectContaining({
-				agentId: undefined,
-				name: undefined,
+				agentId: '',
+				name: '',
 				type: 'agent-saved',
 			}),
 		)
@@ -171,19 +185,20 @@ describe('UC3 — AgentUpsert use case', () => {
 	it('handles missing name field — save called with partial agent, event published with undefined name', async () => {
 		const saveSpy = vi.spyOn(mockRepository, 'save')
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-		const partialAgent = {
+		const partialAgent: Agent = {
 			id: 'agent-partial',
+			name: '',
 			systemPrompt: 'You are helpful.',
 			providerId: 'provider-1',
 			providerConfiguration: {},
 			toolIds: [],
-		} as any
+		}
 		await useCase.execute(partialAgent)
 		expect(saveSpy).toHaveBeenCalledWith(partialAgent)
 		expect(publishSpy).toHaveBeenCalledWith(
 			expect.objectContaining({
 				agentId: 'agent-partial',
-				name: undefined,
+				name: '',
 				type: 'agent-saved',
 			}),
 		)
@@ -192,14 +207,14 @@ describe('UC3 — AgentUpsert use case', () => {
 	it('handles missing description field — save called with partial agent, event published with undefined description', async () => {
 		const saveSpy = vi.spyOn(mockRepository, 'save')
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-		const partialAgent = {
+		const partialAgent: Agent = {
 			id: 'agent-partial',
 			name: 'Partial Agent',
 			systemPrompt: 'You are helpful.',
 			providerId: 'provider-1',
 			providerConfiguration: {},
 			toolIds: [],
-		} as any
+		}
 		await useCase.execute(partialAgent)
 		expect(saveSpy).toHaveBeenCalledWith(partialAgent)
 		expect(publishSpy).toHaveBeenCalledWith(
@@ -214,13 +229,14 @@ describe('UC3 — AgentUpsert use case', () => {
 	it('handles missing toolIds field — save called with partial agent, event published with undefined toolIds', async () => {
 		const saveSpy = vi.spyOn(mockRepository, 'save')
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-		const partialAgent = {
+		const partialAgent: Agent = {
 			id: 'agent-partial',
 			name: 'Partial Agent',
 			systemPrompt: 'You are helpful.',
 			providerId: 'provider-1',
 			providerConfiguration: {},
-		} as any
+			toolIds: [],
+		}
 		await useCase.execute(partialAgent)
 		expect(saveSpy).toHaveBeenCalledWith(partialAgent)
 		expect(publishSpy).toHaveBeenCalledWith(
@@ -246,38 +262,55 @@ describe('UC3 — AgentUpsert use case', () => {
 		await useCase.execute(agent)
 		const after = Date.now()
 
-		const envelope = (publishSpy.mock.calls[0] as [object])[0] as any
-		expect(typeof envelope.id).toBe('string')
+		const envelope = publishSpy.mock.calls[0]?.[0] as {
+			id: string
+			ts: number
+			type: 'agent-saved'
+			agentId: string | undefined
+			name: string | undefined
+			role: 'system'
+		}
+		expect(envelope.id).toBeTypeOf('string')
 		expect(envelope.id.length).toBeGreaterThan(0)
-
-		expect(typeof envelope.ts).toBe('number')
+		expect(envelope.ts).toBeTypeOf('number')
 		expect(envelope.ts).toBeGreaterThanOrEqual(before)
 		expect(envelope.ts).toBeLessThanOrEqual(after)
-
 		expect(envelope.type).toBe('agent-saved')
 		expect(envelope.agentId).toBe('agent-envelope-test')
 		expect(envelope.name).toBe('Envelope Agent')
 		expect(envelope.role).toBe('system')
 	})
 
-	it('verifies event envelope structure with empty agent — id is undefined, ts is still a valid timestamp', async () => {
+	it('verifies event envelope structure with empty agent — id and name are empty strings, ts is still a valid timestamp', async () => {
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-		const emptyAgent = {} as any
+		const emptyAgent: Agent = {
+			id: '',
+			name: '',
+			systemPrompt: '',
+			providerId: '',
+			providerConfiguration: {},
+			toolIds: [],
+		}
 		const before = Date.now()
 		await useCase.execute(emptyAgent)
 		const after = Date.now()
 
-		const envelope = (publishSpy.mock.calls[0] as [object])[0] as any
-		expect(typeof envelope.id).toBe('string')
+		const envelope = publishSpy.mock.calls[0]?.[0] as {
+			id: string
+			ts: number
+			type: 'agent-saved'
+			agentId: string
+			name: string
+			role: 'system'
+		}
+		expect(envelope.id).toBeTypeOf('string')
 		expect(envelope.id.length).toBeGreaterThan(0)
-
-		expect(typeof envelope.ts).toBe('number')
+		expect(envelope.ts).toBeTypeOf('number')
 		expect(envelope.ts).toBeGreaterThanOrEqual(before)
 		expect(envelope.ts).toBeLessThanOrEqual(after)
-
 		expect(envelope.type).toBe('agent-saved')
-		expect(envelope.agentId).toBe(undefined)
-		expect(envelope.name).toBe(undefined)
+		expect(envelope.agentId).toBe('')
+		expect(envelope.name).toBe('')
 		expect(envelope.role).toBe('system')
 	})
 
@@ -295,13 +328,18 @@ describe('UC3 — AgentUpsert use case', () => {
 		await useCase.execute(emptyStringsAgent)
 		const after = Date.now()
 
-		const envelope = (publishSpy.mock.calls[0] as [object])[0] as any
-		expect(typeof envelope.id).toBe('string')
-
-		expect(typeof envelope.ts).toBe('number')
+		const envelope = publishSpy.mock.calls[0]?.[0] as {
+			id: string
+			ts: number
+			type: 'agent-saved'
+			agentId: string | undefined
+			name: string | undefined
+			role: 'system'
+		}
+		expect(envelope.id).toBeTypeOf('string')
+		expect(envelope.ts).toBeTypeOf('number')
 		expect(envelope.ts).toBeGreaterThanOrEqual(before)
 		expect(envelope.ts).toBeLessThanOrEqual(after)
-
 		expect(envelope.type).toBe('agent-saved')
 		expect(envelope.agentId).toBe('')
 		expect(envelope.name).toBe('')
@@ -319,15 +357,20 @@ describe('UC3 — AgentUpsert use case', () => {
 			toolIds: [],
 		}
 		await useCase.execute(agent)
-		const envelope = (publishSpy.mock.calls[0] as [object])[0]
-		expect(envelope).toHaveProperty('id')
-		expect(envelope).toHaveProperty('ts')
-		expect(typeof (envelope as any).id).toBe('string')
-		expect(typeof (envelope as any).ts).toBe('number')
-		expect((envelope as any).type).toBe('agent-saved')
-		expect((envelope as any).agentId).toBe('agent-2')
-		expect((envelope as any).name).toBe('Another Agent')
-		expect((envelope as any).role).toBe('system')
+		const envelope = publishSpy.mock.calls[0]?.[0] as {
+			id: string
+			ts: number
+			type: 'agent-saved'
+			agentId: string | undefined
+			name: string | undefined
+			role: 'system'
+		}
+		expect(envelope.id).toBeTypeOf('string')
+		expect(envelope.ts).toBeTypeOf('number')
+		expect(envelope.type).toBe('agent-saved')
+		expect(envelope.agentId).toBe('agent-2')
+		expect(envelope.name).toBe('Another Agent')
+		expect(envelope.role).toBe('system')
 	})
 
 	it('propagates errors from eventBus.publish', async () => {

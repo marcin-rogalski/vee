@@ -200,52 +200,52 @@ describe('D4 — Session edge cases and boundary values', () => {
 			expect(session.createdAt < session.updatedAt).toBe(true)
 		})
 
-		it('accepts violation case where createdAt > updatedAt (as any)', () => {
-			const session = {
+		it('accepts violation case where createdAt > updatedAt', () => {
+			const session: Partial<Session> = {
 				id: 'session-1',
 				name: 'Test Session',
 				createdAt: 1700000002000,
 				updatedAt: 1700000000000,
-			} as any
-			expect(session.createdAt > session.updatedAt).toBe(true)
+			}
+			expect((session.createdAt ?? 0) > (session.updatedAt ?? 0)).toBe(true)
 		})
 	})
 
 	/* g. Missing required fields: test what happens when fields are missing (use `as any`) */
 	describe('missing required fields', () => {
-		it('handles missing id field (as any)', () => {
-			const session = {
+		it('handles missing id field', () => {
+			const session: Partial<Session> = {
 				name: 'Test Session',
 				createdAt: 1700000000000,
 				updatedAt: 1700000001000,
-			} as any
+			}
 			expect(session.id).toBeUndefined()
 		})
 
-		it('handles missing name field (as any)', () => {
-			const session = {
+		it('handles missing name field', () => {
+			const session: Partial<Session> = {
 				id: 'session-1',
 				createdAt: 1700000000000,
 				updatedAt: 1700000001000,
-			} as any
+			}
 			expect(session.name).toBeUndefined()
 		})
 
-		it('handles missing createdAt field (as any)', () => {
-			const session = {
+		it('handles missing createdAt field', () => {
+			const session: Partial<Session> = {
 				id: 'session-1',
 				name: 'Test Session',
 				updatedAt: 1700000001000,
-			} as any
+			}
 			expect(session.createdAt).toBeUndefined()
 		})
 
-		it('handles missing updatedAt field (as any)', () => {
-			const session = {
+		it('handles missing updatedAt field', () => {
+			const session: Partial<Session> = {
 				id: 'session-1',
 				name: 'Test Session',
 				createdAt: 1700000000000,
-			} as any
+			}
 			expect(session.updatedAt).toBeUndefined()
 		})
 	})

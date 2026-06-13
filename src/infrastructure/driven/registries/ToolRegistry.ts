@@ -1,5 +1,6 @@
 import type ToolPort from '@application/ports/Tool.port'
 import type ToolRegistryPort from '@application/ports/ToolRgistry.port'
+import { NotFoundError } from '@domain/errors'
 
 class ToolRegistry implements ToolRegistryPort {
 	private tools: Map<string, ToolPort> = new Map()
@@ -12,7 +13,7 @@ class ToolRegistry implements ToolRegistryPort {
 		const tool = this.tools.get(id)
 
 		if (!tool) {
-			throw new Error(`Tool with id ${id} not found`)
+			throw new NotFoundError('Tool', id)
 		}
 
 		return tool

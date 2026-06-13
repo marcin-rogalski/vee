@@ -5,7 +5,11 @@ import type { IEndpoint } from './ExpressEndpoint.adapter'
 
 export default class ExpressServer {
 	private express = express()
-	private httpServer: HttpServer | undefined
+	protected httpServer: HttpServer | undefined
+
+	protected async stop(): Promise<void> {
+		this.httpServer?.close()
+	}
 
 	constructor(
 		readonly port: number,
@@ -45,9 +49,5 @@ export default class ExpressServer {
 
 		process.on('SIGINT', this.stop.bind(this))
 		process.on('SIGTERM', this.stop.bind(this))
-	}
-
-	private async stop() {
-		this.httpServer?.close()
 	}
 }

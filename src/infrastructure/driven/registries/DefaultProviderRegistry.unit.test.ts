@@ -1,4 +1,5 @@
 import type ProviderPort from '@application/ports/Provider.port'
+import type Provider from '@domain/Provider'
 import { beforeEach, describe, expect, it } from 'vitest'
 import DefaultProviderRegistry from './DefaultProviderRegistry'
 
@@ -19,11 +20,13 @@ describe('R1 — DefaultProviderRegistry', () => {
 			infer: async function* () {},
 		}
 		registry.register('openai', () => mockProvider)
-		const result = registry.resolve({
+		const provider: Provider = {
 			id: 'p1',
+			name: 'Test Provider',
 			type: 'openai',
 			configSchema: [],
-		} as any)
+		}
+		const result = registry.resolve(provider)
 		expect(result).toBe(mockProvider)
 	})
 
@@ -37,11 +40,13 @@ describe('R1 — DefaultProviderRegistry', () => {
 			infer: async function* () {},
 		}
 		registry.register('anthropic', () => mockProvider)
-		const result = registry.resolve({
+		const provider: Provider = {
 			id: 'p1',
+			name: 'Test Provider',
 			type: 'anthropic',
 			configSchema: [],
-		} as any)
+		}
+		const result = registry.resolve(provider)
 		expect(result).toBe(mockProvider)
 	})
 
@@ -54,22 +59,32 @@ describe('R1 — DefaultProviderRegistry', () => {
 			shouldCompact: () => false,
 			infer: async function* () {},
 		}))
-		const a = registry.resolve({
+		const providerA: Provider = {
 			id: 'p1',
+			name: 'Provider A',
 			type: 'openai',
 			configSchema: [],
-		} as any)
-		const b = registry.resolve({
+		}
+		const providerB: Provider = {
 			id: 'p2',
+			name: 'Provider B',
 			type: 'openai',
 			configSchema: [],
-		} as any)
+		}
+		const a = registry.resolve(providerA)
+		const b = registry.resolve(providerB)
 		expect(a).not.toBe(b)
 	})
 
 	it('throws Error when provider type is not registered', () => {
-		expect(() =>
-			registry.resolve({ id: 'p1', type: 'unknown', configSchema: [] } as any),
-		).toThrow('Provider type unknown not registered')
+		const provider: Provider = {
+			id: 'p1',
+			name: 'Unknown Provider',
+			type: 'unknown',
+			configSchema: [],
+		}
+		expect(() => registry.resolve(provider)).toThrow(
+			'Provider type with id unknown not found',
+		)
 	})
 })

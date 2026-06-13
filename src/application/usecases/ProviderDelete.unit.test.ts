@@ -60,14 +60,24 @@ describe('UC9 — ProviderDelete use case', () => {
 	it('publishes event envelope with correct type contract (single argument)', async () => {
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
 		await useCase.execute('p2')
-		const envelope = (publishSpy.mock.calls[0] as [object])[0]
+		const envelope = (
+			publishSpy.mock.calls[0] as [
+				{
+					id: string
+					ts: number
+					type: string
+					providerId: string
+					role: string
+				},
+			]
+		)[0]
 		expect(envelope).toHaveProperty('id')
 		expect(envelope).toHaveProperty('ts')
-		expect(typeof (envelope as any).id).toBe('string')
-		expect(typeof (envelope as any).ts).toBe('number')
-		expect((envelope as any).type).toBe('provider-deleted')
-		expect((envelope as any).providerId).toBe('p2')
-		expect((envelope as any).role).toBe('system')
+		expect(typeof envelope.id).toBe('string')
+		expect(typeof envelope.ts).toBe('number')
+		expect(envelope.type).toBe('provider-deleted')
+		expect(envelope.providerId).toBe('p2')
+		expect(envelope.role).toBe('system')
 	})
 
 	it('propagates errors from eventBus.publish', async () => {
@@ -121,10 +131,17 @@ describe('UC9 — ProviderDelete use case', () => {
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
 		const testProviderId = 'provider-xyz-789'
 		await useCase.execute(testProviderId)
-		const envelope = (publishSpy.mock.calls[0] as [object])[0] as Record<
-			string,
-			unknown
-		>
+		const envelope = (
+			publishSpy.mock.calls[0] as [
+				{
+					id: string
+					ts: number
+					type: string
+					providerId: string
+					role: string
+				},
+			]
+		)[0]
 		// providerId must match the input ID exactly
 		expect(envelope.providerId).toBe(testProviderId)
 		// type must be 'provider-deleted'

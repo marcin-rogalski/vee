@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { Session as SessionDto, ChatSessionSummaryDto } from './Session.dto'
+import type SessionDto from './Session.dto'
+import type { ChatSessionSummaryDto } from './Session.dto'
 
 describe('DTO — SessionDto', () => {
 	it('has required id field', () => {

@@ -283,10 +283,7 @@ describe('InferUseCase', () => {
 		// Count assistant token events
 		const assistantTokenEvents = publishCalls.filter((call: any) => {
 			const envelope = call[0]
-			return (
-				envelope?.role === 'assistant' &&
-				envelope?.type === 'token'
-			)
+			return envelope?.role === 'assistant' && envelope?.type === 'token'
 		})
 		// Verify token events were published
 		expect(assistantTokenEvents).toHaveLength(1) // 'Hello, world!' (single token from mock)
@@ -341,7 +338,7 @@ describe('InferUseCase', () => {
 		;(mockProvider.infer as any).mockImplementation(() => mockInfer())
 
 		// Setup mock to track tool execution call arguments
-		let executeCallCount = 0
+		const _executeCallCount = 0
 		;(mockToolRegistry.get as any).mockReturnValue({
 			id: 'read-file',
 			description: 'Read a file',
@@ -350,23 +347,32 @@ describe('InferUseCase', () => {
 				description: 'Read a file',
 				parameters: '{}',
 			},
-			execute: vi.fn().mockResolvedValue({ content: 'file content', code: undefined }),
+			execute: vi
+				.fn()
+				.mockResolvedValue({ content: 'file content', code: undefined }),
 		})
 
 		await useCase.execute('Hello', 'agent-1', 'session-1')
 
 		// Verify tool-call event was published
 		const publishCalls = (mockEventBus.publish as any).mock.calls
-		const toolCallEvent = publishCalls.find((call: any) => call[0]?.type === 'tool-call')
+		const toolCallEvent = publishCalls.find(
+			(call: any) => call[0]?.type === 'tool-call',
+		)
 		expect(toolCallEvent).toBeDefined()
 		expect(toolCallEvent[0].toolCalls).toEqual([mockToolCall])
 
 		// Verify tool execution was called with JSON string argument
 		expect(mockToolRegistry.get).toHaveBeenCalledWith('read-file')
-		expect(mockToolRegistry.get().execute).toHaveBeenCalledWith(JSON.stringify({ path: '/test.txt' }))
+		const mockTool = mockToolRegistry.get('read-file')
+		expect(mockTool.execute).toHaveBeenCalledWith(
+			JSON.stringify({ path: '/test.txt' }),
+		)
 
 		// Verify tool-response event was published
-		const toolResponseEvent = publishCalls.find((call: any) => call[0]?.type === 'tool-response')
+		const toolResponseEvent = publishCalls.find(
+			(call: any) => call[0]?.type === 'tool-response',
+		)
 		expect(toolResponseEvent).toBeDefined()
 		expect(toolResponseEvent[0].content).toBe('file content')
 
@@ -421,8 +427,12 @@ describe('InferUseCase', () => {
 		;(mockProvider.infer as any).mockImplementation(() => mockInfer())
 
 		// Mock two separate tool executions with JSON string arguments
-		const mockExecute1 = vi.fn().mockResolvedValue({ content: 'content1', code: undefined })
-		const mockExecute2 = vi.fn().mockResolvedValue({ content: 'content2', code: undefined })
+		const mockExecute1 = vi
+			.fn()
+			.mockResolvedValue({ content: 'content1', code: undefined })
+		const mockExecute2 = vi
+			.fn()
+			.mockResolvedValue({ content: 'content2', code: undefined })
 
 		let executeCallCount = 0
 		;(mockToolRegistry.get as any).mockReturnValue({
@@ -446,12 +456,18 @@ describe('InferUseCase', () => {
 		await useCase.execute('Hello', 'agent-1', 'session-1')
 
 		// Verify both tool calls were executed with JSON string arguments
-		expect(mockExecute1).toHaveBeenCalledWith(JSON.stringify({ path: '/test1.txt' }))
-		expect(mockExecute2).toHaveBeenCalledWith(JSON.stringify({ path: '/test2.txt' }))
+		expect(mockExecute1).toHaveBeenCalledWith(
+			JSON.stringify({ path: '/test1.txt' }),
+		)
+		expect(mockExecute2).toHaveBeenCalledWith(
+			JSON.stringify({ path: '/test2.txt' }),
+		)
 
 		// Verify tool-response events were published for each tool call
 		const publishCalls = (mockEventBus.publish as any).mock.calls
-		const toolResponseEvents = publishCalls.filter((call: any) => call[0]?.type === 'tool-response')
+		const toolResponseEvents = publishCalls.filter(
+			(call: any) => call[0]?.type === 'tool-response',
+		)
 		expect(toolResponseEvents).toHaveLength(2)
 	})
 
@@ -478,9 +494,7 @@ describe('InferUseCase', () => {
 				}
 			}
 
-			const events = [
-				{ type: 'tool-call', toolCalls: [mockToolCall] },
-			]
+			const events = [{ type: 'tool-call', toolCalls: [mockToolCall] }]
 			let index = 0
 			return {
 				[Symbol.asyncIterator]() {
@@ -510,7 +524,9 @@ describe('InferUseCase', () => {
 			execute: vi.fn().mockRejectedValue(error),
 		})
 
-		await expect(useCase.execute('Hello', 'agent-1', 'session-1')).rejects.toThrow('File not found')
+		await expect(
+			useCase.execute('Hello', 'agent-1', 'session-1'),
+		).rejects.toThrow('File not found')
 	})
 
 	it('propagates provider.infer() errors', async () => {
@@ -518,7 +534,9 @@ describe('InferUseCase', () => {
 			throw new Error('Provider error')
 		})
 
-		await expect(useCase.execute('Hello', 'agent-1', 'session-1')).rejects.toThrow('Provider error')
+		await expect(
+			useCase.execute('Hello', 'agent-1', 'session-1'),
+		).rejects.toThrow('Provider error')
 	})
 
 	it('handles empty toolIds array correctly', async () => {

@@ -1,5 +1,6 @@
 import type ProviderPort from '@application/ports/Provider.port'
 import type ProviderRegistryPort from '@application/ports/ProviderRegistry.port'
+import { NotFoundError } from '@domain/errors'
 import type Provider from '@domain/Provider'
 
 class DefaultProviderRegistry implements ProviderRegistryPort {
@@ -9,10 +10,10 @@ class DefaultProviderRegistry implements ProviderRegistryPort {
 		this.providerFactories[type] = factory
 	}
 
-	resolve(_provider: Provider): ProviderPort {
-		const factory = this.providerFactories[_provider.type]
+	resolve(provider: Provider): ProviderPort {
+		const factory = this.providerFactories[provider.type]
 		if (!factory) {
-			throw new Error(`Provider type ${_provider.type} not registered`)
+			throw new NotFoundError('Provider type', provider.type)
 		}
 		return factory()
 	}

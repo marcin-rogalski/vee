@@ -56,7 +56,9 @@ describe('UC2 — AgentList use case', () => {
 	it('propagates error when repository.list() throws', async () => {
 		const testError = new Error('database connection failed')
 		vi.spyOn(mockRepository, 'list').mockRejectedValue(testError)
-		await expect(useCase.execute()).rejects.toThrow('database connection failed')
+		await expect(useCase.execute()).rejects.toThrow(
+			'database connection failed',
+		)
 	})
 
 	it('returns correct structure for large dataset (1000 agents)', async () => {
@@ -69,7 +71,11 @@ describe('UC2 — AgentList use case', () => {
 		const result = await useCase.execute()
 		expect(Array.isArray(result)).toBe(true)
 		expect(result).toHaveLength(1000)
-		expect(result[0]).toEqual({ id: 'agent-0', name: 'Agent 0', description: 'Description for agent 0' })
+		expect(result[0]).toEqual({
+			id: 'agent-0',
+			name: 'Agent 0',
+			description: 'Description for agent 0',
+		})
 		expect(result[998]).toEqual({ id: 'agent-998', name: 'Agent 998' })
 		expect(result[998]).not.toHaveProperty('description')
 	})

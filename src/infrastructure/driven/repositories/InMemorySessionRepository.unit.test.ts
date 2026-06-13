@@ -1,11 +1,32 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import InMemorySessionRepository from './InMemorySessionRepository'
 
+class TestableSessionRepository extends InMemorySessionRepository {
+	getSessionsForTest(): Map<
+		string,
+		{
+			session: {
+				id: string
+				name: string
+				createdAt: number
+				updatedAt: number
+			}
+			expiresAt: number
+		}
+	> {
+		return this.sessions
+	}
+
+	runCleanupForTest(): void {
+		this.cleanup()
+	}
+}
+
 describe('R6 — InMemorySessionRepository', () => {
 	let repo: InMemorySessionRepository
 
 	beforeEach(() => {
-		repo = new InMemorySessionRepository()
+		repo = new TestableSessionRepository()
 	})
 
 	afterEach(() => {
@@ -52,7 +73,9 @@ describe('R6 — InMemorySessionRepository', () => {
 
 	it('list() excludes expired sessions', async () => {
 		const session = await repo.create('Test Session')
-		const cachedSessions = (repo as any).sessions
+		const cachedSessions = (
+			repo as TestableSessionRepository
+		).getSessionsForTest()
 		const cached = cachedSessions.get(session.id)
 		if (cached) {
 			cached.expiresAt = Date.now() - 1
@@ -81,19 +104,21 @@ describe('R6 — InMemorySessionRepository', () => {
 	})
 
 	it('destroy() clears cleanup timer', () => {
-		const destroySpy = vi.spyOn(repo as any, 'destroy')
+		const destroySpy = vi.spyOn(repo, 'destroy')
 		repo.destroy()
 		expect(destroySpy).toHaveBeenCalled()
 	})
 
 	it('background cleanup() removes expired sessions', async () => {
 		const session = await repo.create('Test Session')
-		const cachedSessions = (repo as any).sessions
+		const cachedSessions = (
+			repo as TestableSessionRepository
+		).getSessionsForTest()
 		const cached = cachedSessions.get(session.id)
 		if (cached) {
 			cached.expiresAt = Date.now() - 1
 		}
-		;(repo as any).cleanup()
+		;(repo as TestableSessionRepository).runCleanupForTest()
 		const result = await repo.list()
 		expect(result).toHaveLength(0)
 	})

@@ -1,4 +1,5 @@
 import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
+import type Provider from '@domain/Provider'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ProviderListUseCase from './ProviderList.usecase'
 
@@ -60,11 +61,10 @@ describe('UC7 — ProviderList use case', () => {
 	})
 
 	it('returns malformed data with missing id field as-is', async () => {
-		const malformedList = [
-			{ id: 'p1', name: 'OpenAI' },
-			{ name: 'MissingId' },
-		]
-		vi.spyOn(mockRepository, 'list').mockResolvedValue(malformedList)
+		const malformedList = [{ id: 'p1', name: 'OpenAI' }, { name: 'MissingId' }]
+		vi.spyOn(mockRepository, 'list').mockResolvedValue(
+			malformedList as unknown as Array<Provider>,
+		)
 		const result = await useCase.execute()
 		expect(result).toHaveLength(2)
 		expect(result[0]).toEqual({ id: 'p1', name: 'OpenAI' })
@@ -72,11 +72,10 @@ describe('UC7 — ProviderList use case', () => {
 	})
 
 	it('returns malformed data with missing name field as-is', async () => {
-		const malformedList = [
-			{ id: 'p1', name: 'OpenAI' },
-			{ id: 'p2' },
-		]
-		vi.spyOn(mockRepository, 'list').mockResolvedValue(malformedList)
+		const malformedList = [{ id: 'p1', name: 'OpenAI' }, { id: 'p2' }]
+		vi.spyOn(mockRepository, 'list').mockResolvedValue(
+			malformedList as unknown as Array<Provider>,
+		)
 		const result = await useCase.execute()
 		expect(result).toHaveLength(2)
 		expect(result[0]).toEqual({ id: 'p1', name: 'OpenAI' })

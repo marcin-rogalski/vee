@@ -1,18 +1,15 @@
-import type LoggerPort from '@application/ports/Logger.port'
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
-import { z } from 'zod'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import type LoggerPort from '@application/ports/Logger.port'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { z } from 'zod'
 
 // Replicate the schema and class for testing
 const schema = z.object({
 	NODE_ENV: z
 		.enum(['development', 'production', 'test'])
 		.describe('Environment mode'),
-	SERVER_PORT: z
-		.coerce.number()
-		.default(3000)
-		.describe('Server port number'),
+	SERVER_PORT: z.coerce.number().default(3000).describe('Server port number'),
 	CONFIG_FOLDER: z
 		.string()
 		.default(join(homedir(), '.vee'))
@@ -168,7 +165,7 @@ describe('U2 — NodeEnvironment', () => {
 
 	it('validates NODE_ENV', () => {
 		// Set invalid NODE_ENV
-		process.env.NODE_ENV = 'invalid'
+		process.env.NODE_ENV = 'invalid' as never
 
 		// Should throw validation error
 		expect(() => {
@@ -194,11 +191,12 @@ describe('U2 — NodeEnvironment', () => {
 		expect(mockLogger.info).toHaveBeenCalled()
 
 		// Get the call arguments
-		const callArgs = mockLogger.info.mock.calls[0]
-		expect(callArgs[0]).toBe('Environment loaded')
-		expect(callArgs[1]).toBeDefined()
-		expect(callArgs[1]?.mode).toBe('development')
-		expect(callArgs[1]?.serverPort).toBe(3000)
+		const callArgs = (mockLogger.info as ReturnType<typeof vi.fn>).mock.calls[0]
+		expect(callArgs).toBeDefined()
+		expect(callArgs?.[0]).toBe('Environment loaded')
+		expect(callArgs?.[1]).toBeDefined()
+		expect(callArgs?.[1]?.mode).toBe('development')
+		expect(callArgs?.[1]?.serverPort).toBe(3000)
 	})
 
 	it('handles port coercion', () => {

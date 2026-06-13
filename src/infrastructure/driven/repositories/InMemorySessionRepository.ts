@@ -1,4 +1,5 @@
 import type SessionRepositoryPort from '@application/ports/SessionRepository.port'
+import { NotFoundError } from '@domain/errors'
 import type Session from '@domain/Session'
 
 const SESSION_TTL_MS = 10 * 60 * 1000 // 10 minutes
@@ -9,15 +10,15 @@ interface CachedSession {
 }
 
 class InMemorySessionRepository implements SessionRepositoryPort {
-	private readonly sessions: Map<string, CachedSession> = new Map()
-	private readonly cleanupTimer: NodeJS.Timeout
+	protected readonly sessions: Map<string, CachedSession> = new Map()
+	protected readonly cleanupTimer: NodeJS.Timeout
 
 	constructor() {
 		this.cleanupTimer = setInterval(() => this.cleanup(), 60 * 1000)
 		this.cleanupTimer.unref()
 	}
 
-	private cleanup(): void {
+	protected cleanup(): void {
 		const now = Date.now()
 		for (const [id, cached] of this.sessions) {
 			if (cached.expiresAt <= now) {
@@ -29,7 +30,7 @@ class InMemorySessionRepository implements SessionRepositoryPort {
 	async get(id: string): Promise<Session> {
 		const cached = this.sessions.get(id)
 		if (!cached || cached.expiresAt <= Date.now()) {
-			throw new Error(`Session with id ${id} not found`)
+			throw new NotFoundError('Session', id)
 		}
 		cached.expiresAt = Date.now() + SESSION_TTL_MS
 		return cached.session
@@ -58,7 +59,7 @@ class InMemorySessionRepository implements SessionRepositoryPort {
 	async setName(id: string, name: string): Promise<void> {
 		const cached = this.sessions.get(id)
 		if (!cached) {
-			throw new Error(`Session with id ${id} not found`)
+			throw new NotFoundError('Session', id)
 		}
 		cached.session.name = name
 		cached.session.updatedAt = Date.now()

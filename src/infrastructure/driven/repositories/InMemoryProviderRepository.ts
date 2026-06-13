@@ -1,4 +1,5 @@
 import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
+import { NotFoundError } from '@domain/errors'
 import type Provider from '@domain/Provider'
 
 class InMemoryProviderRepository implements ProviderRepositoryPort {
@@ -7,7 +8,7 @@ class InMemoryProviderRepository implements ProviderRepositoryPort {
 	async get(id: string): Promise<Provider> {
 		const provider = this.providers.get(id)
 		if (!provider) {
-			throw new Error(`Provider with id ${id} not found`)
+			throw new NotFoundError('Provider', id)
 		}
 		return provider
 	}

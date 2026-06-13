@@ -42,43 +42,83 @@ describe('D2 — Provider type shape', () => {
 	/* ---- Type constraint enforcement (string-only fields) ---- */
 
 	it('rejects non-string id via runtime shape check (number)', () => {
-		const badIdProvider = { id: 123, name: 'Test', type: 'test', configSchema: [] } as any
+		const badIdProvider: Record<string, unknown> = {
+			id: 123,
+			name: 'Test',
+			type: 'test',
+			configSchema: [],
+		}
 		expect(typeof badIdProvider.id).toBe('number')
 		expect(badIdProvider.id).not.toBeTypeOf('string')
 	})
 
 	it('rejects non-string id via runtime shape check (null)', () => {
-		const badIdProvider = { id: null, name: 'Test', type: 'test', configSchema: [] } as any
+		const badIdProvider: Record<string, unknown> = {
+			id: null,
+			name: 'Test',
+			type: 'test',
+			configSchema: [],
+		}
 		expect(badIdProvider.id).toBeNull()
 	})
 
 	it('rejects non-string id via runtime shape check (object)', () => {
-		const badIdProvider = { id: { nested: 'obj' }, name: 'Test', type: 'test', configSchema: [] } as any
+		const badIdProvider: Record<string, unknown> = {
+			id: { nested: 'obj' },
+			name: 'Test',
+			type: 'test',
+			configSchema: [],
+		}
 		expect(typeof badIdProvider.id).toBe('object')
 	})
 
 	it('rejects non-string name via runtime shape check (number)', () => {
-		const badNameProvider = { id: 'p1', name: 42, type: 'test', configSchema: [] } as any
+		const badNameProvider: Record<string, unknown> = {
+			id: 'p1',
+			name: 42,
+			type: 'test',
+			configSchema: [],
+		}
 		expect(typeof badNameProvider.name).toBe('number')
 	})
 
 	it('rejects non-string name via runtime shape check (array)', () => {
-		const badNameProvider = { id: 'p1', name: ['a', 'b'], type: 'test', configSchema: [] } as any
+		const badNameProvider: Record<string, unknown> = {
+			id: 'p1',
+			name: ['a', 'b'],
+			type: 'test',
+			configSchema: [],
+		}
 		expect(Array.isArray(badNameProvider.name)).toBe(true)
 	})
 
 	it('rejects non-string type via runtime shape check (boolean)', () => {
-		const badTypeProvider = { id: 'p1', name: 'Test', type: true, configSchema: [] } as any
+		const badTypeProvider: Record<string, unknown> = {
+			id: 'p1',
+			name: 'Test',
+			type: true,
+			configSchema: [],
+		}
 		expect(typeof badTypeProvider.type).toBe('boolean')
 	})
 
 	it('rejects non-string type via runtime shape check (null)', () => {
-		const badTypeProvider = { id: 'p1', name: 'Test', type: null, configSchema: [] } as any
+		const badTypeProvider: Record<string, unknown> = {
+			id: 'p1',
+			name: 'Test',
+			type: null,
+			configSchema: [],
+		}
 		expect(badTypeProvider.type).toBeNull()
 	})
 
 	it('rejects non-array configSchema via runtime shape check (object)', () => {
-		const badSchemaProvider = { id: 'p1', name: 'Test', type: 'test', configSchema: { key: 'val' } } as any
+		const badSchemaProvider: Record<string, unknown> = {
+			id: 'p1',
+			name: 'Test',
+			type: 'test',
+			configSchema: { key: 'val' },
+		}
 		expect(typeof badSchemaProvider.configSchema).toBe('object')
 		expect(Array.isArray(badSchemaProvider.configSchema)).toBe(false)
 	})
@@ -112,10 +152,10 @@ describe('D2 — Provider type shape', () => {
 			configSchema: [schema1, schema2, schema3],
 		}
 		expect(multiSchemaProvider.configSchema).toHaveLength(3)
-		expect(multiSchemaProvider.configSchema[0].key).toBe('apiKey')
-		expect(multiSchemaProvider.configSchema[1].key).toBe('baseUrl')
-		expect(multiSchemaProvider.configSchema[2].key).toBe('timeout')
-		expect(multiSchemaProvider.configSchema[2].type).toBe('number')
+		expect(multiSchemaProvider.configSchema[0]?.key).toBe('apiKey')
+		expect(multiSchemaProvider.configSchema[1]?.key).toBe('baseUrl')
+		expect(multiSchemaProvider.configSchema[2]?.key).toBe('timeout')
+		expect(multiSchemaProvider.configSchema[2]?.type).toBe('number')
 	})
 
 	/* ---- Boundary values ---- */
@@ -209,47 +249,73 @@ describe('D2 — Provider type shape', () => {
 	/* ---- Invalid provider shapes ---- */
 
 	it('rejects provider missing required field id', () => {
-		const missingId = { name: 'Test', type: 'test', configSchema: [] } as any
+		const missingId: Record<string, unknown> = {
+			name: 'Test',
+			type: 'test',
+			configSchema: [],
+		}
 		expect(missingId).not.toHaveProperty('id')
 	})
 
 	it('rejects provider missing required field name', () => {
-		const missingName = { id: 'p1', type: 'test', configSchema: [] } as any
+		const missingName: Record<string, unknown> = {
+			id: 'p1',
+			type: 'test',
+			configSchema: [],
+		}
 		expect(missingName).not.toHaveProperty('name')
 	})
 
 	it('rejects provider missing required field type', () => {
-		const missingType = { id: 'p1', name: 'Test', configSchema: [] } as any
+		const missingType: Record<string, unknown> = {
+			id: 'p1',
+			name: 'Test',
+			configSchema: [],
+		}
 		expect(missingType).not.toHaveProperty('type')
 	})
 
 	it('rejects provider missing required field configSchema', () => {
-		const missingSchema = { id: 'p1', name: 'Test', type: 'test' } as any
+		const missingSchema: Record<string, unknown> = {
+			id: 'p1',
+			name: 'Test',
+			type: 'test',
+		}
 		expect(missingSchema).not.toHaveProperty('configSchema')
 	})
 
 	it('rejects provider with all required fields missing', () => {
-		const emptyProvider = {} as any
+		const emptyProvider: Record<string, unknown> = {}
 		expect(Object.keys(emptyProvider)).toHaveLength(0)
 	})
 
 	it('accepts extra unexpected keys on provider (shape allows it)', () => {
-		const extraKeysProvider = {
+		const extraKeysProvider: Record<string, unknown> = {
 			...validProvider,
 			extraField: 'should not affect type',
 			anotherExtra: { nested: true },
-		} as any
+		}
 		expect(extraKeysProvider.extraField).toBe('should not affect type')
 		expect(extraKeysProvider.anotherExtra).toEqual({ nested: true })
 	})
 
 	it('rejects provider with undefined id', () => {
-		const undefinedIdProvider = { id: undefined, name: 'Test', type: 'test', configSchema: [] } as any
+		const undefinedIdProvider: Record<string, unknown> = {
+			id: undefined,
+			name: 'Test',
+			type: 'test',
+			configSchema: [],
+		}
 		expect(undefinedIdProvider.id).toBeUndefined()
 	})
 
 	it('rejects provider with undefined name', () => {
-		const undefinedNameProvider = { id: 'p1', name: undefined, type: 'test', configSchema: [] } as any
+		const undefinedNameProvider: Record<string, unknown> = {
+			id: 'p1',
+			name: undefined,
+			type: 'test',
+			configSchema: [],
+		}
 		expect(undefinedNameProvider.name).toBeUndefined()
 	})
 })

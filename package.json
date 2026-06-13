@@ -1,35 +1,36 @@
 {
 	"name": "vee",
 	"version": "1.0.0",
-	"description": "",
 	"license": "ISC",
-	"author": "",
+	"author": "Marcin Rogalski",
 	"type": "module",
-	"main": "index.js",
 	"scripts": {
-		"lint": "biome check --write --unsafe",
-		"typecheck": "tsc --noEmit",
+		"start:server": "tsup src/entryServer.ts --watch --format cjs",
+		"start:cli": "tsup src/entryCli.ts --watch --format cjs",
 		"build": "tsup",
 		"test": "vitest run",
-		"test:watch": "vitest",
-		"start": "sh scripts/start.sh",
-		"stop": "sh scripts/stop.sh",
-		"cli": "cd cli && npx tsx src/index.tsx"
+		"lint": "biome check --write --unsafe",
+		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
 		"express": "^5.2.1",
-		"lowdb": "^7.0.1",
-		"mongodb": "^7.2.0",
+		"ink": "^7.0.3",
+		"ink-select-input": "^6.2.0",
+		"ink-text-input": "^6.0.0",
 		"openai": "^6.35.0",
 		"tiktoken": "^1.0.22",
-		"tsup": "^8.5.1",
-		"vitest": "^4.1.5",
 		"zod": "^4.4.1"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.4.13",
+		"@biomejs/biome": "2.4.15",
+		"@testing-library/dom": "^10.4.1",
+		"@testing-library/react": "^16.3.2",
 		"@types/express": "^5.0.6",
 		"@types/node": "^25.6.0",
-		"typescript": "^6.0.3"
+		"@types/react": "^19.2.15",
+		"@types/react-dom": "^19.2.3",
+		"tsup": "^8.5.1",
+		"typescript": "^6.0.3",
+		"vitest": "^4.1.5"
 	}
 }

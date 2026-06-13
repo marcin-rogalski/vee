@@ -148,10 +148,22 @@ describe('D1 — Agent edge cases', () => {
 				retries: 3,
 			},
 		}
-		expect(agentWithExtraKeys.providerConfiguration).toHaveProperty('apiKey', 'key')
-		expect(agentWithExtraKeys.providerConfiguration).toHaveProperty('region', 'us-east-1')
-		expect(agentWithExtraKeys.providerConfiguration).toHaveProperty('timeout', 30000)
-		expect(agentWithExtraKeys.providerConfiguration).toHaveProperty('retries', 3)
+		expect(agentWithExtraKeys.providerConfiguration).toHaveProperty(
+			'apiKey',
+			'key',
+		)
+		expect(agentWithExtraKeys.providerConfiguration).toHaveProperty(
+			'region',
+			'us-east-1',
+		)
+		expect(agentWithExtraKeys.providerConfiguration).toHaveProperty(
+			'timeout',
+			30000,
+		)
+		expect(agentWithExtraKeys.providerConfiguration).toHaveProperty(
+			'retries',
+			3,
+		)
 	})
 
 	it('accepts Agent without description key (explicitly omitted)', () => {

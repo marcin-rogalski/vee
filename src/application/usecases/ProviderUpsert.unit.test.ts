@@ -59,85 +59,8 @@ describe('UC8 — ProviderUpsert use case', () => {
 		expect(saveSpy).toHaveBeenCalledWith(provider)
 	})
 
- 	it('publishes a provider-saved event', async () => {
-  		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-  		const configSchema: ConfigurationSchema[] = [
-  			{
-  				key: 'apiKey',
-  				required: true,
-  				type: 'string' as const,
-  				options: undefined,
-  				description: 'Key',
-  			},
-  		]
-  		const provider = {
-  			id: 'p1',
-  			name: 'OpenAI',
-  			type: 'openai',
-  			configSchema,
-  		}
-  		await useCase.execute(provider)
-  		expect(publishSpy).toHaveBeenCalledWith(
-  			expect.objectContaining({
-  				type: 'provider-saved',
-  				providerId: 'p1',
-  				name: 'OpenAI',
-  				id: expect.any(String),
-  				role: 'system',
-  				ts: expect.any(Number),
-  			}),
-  		)
-  	})
-
-  	it('publishes event envelope with correct type contract (single argument)', async () => {
-  		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-  		const configSchema: ConfigurationSchema[] = [
-  			{
-  				key: 'apiKey',
-  				required: true,
-  				type: 'string' as const,
-  				options: undefined,
-  				description: 'Key',
-  			},
-  		]
-  		const provider = {
-  			id: 'p2',
-  			name: 'Anthropic',
-  			type: 'anthropic',
-  			configSchema,
-  		}
-  		await useCase.execute(provider)
-  		const envelope = (publishSpy.mock.calls[0] as [object])[0]
-  		expect(envelope).toHaveProperty('id')
-  		expect(envelope).toHaveProperty('ts')
-  		expect(typeof (envelope as any).id).toBe('string')
-  		expect(typeof (envelope as any).ts).toBe('number')
-  		expect((envelope as any).type).toBe('provider-saved')
-  		expect((envelope as any).providerId).toBe('p2')
-  		expect((envelope as any).name).toBe('Anthropic')
-  		expect((envelope as any).role).toBe('system')
-  	})
-
-  	it('propagates errors from eventBus.publish', async () => {
-  		vi.spyOn(mockRepository, 'save').mockResolvedValue(undefined)
-  		vi.spyOn(mockEventBus, 'publish').mockRejectedValue(new Error('Event bus unavailable'))
-  		const configSchema: ConfigurationSchema[] = [
-  			{
-  				key: 'apiKey',
-  				required: true,
-  				type: 'string' as const,
-  				options: undefined,
-  				description: 'Key',
-  			},
-  		]
-  		const provider = { id: 'p3', name: 'Test', type: 'test', configSchema }
-  		await expect(useCase.execute(provider)).rejects.toThrow('Event bus unavailable')
-  	})
-
-	// --- Error paths ---
-
-	it('propagates errors from providerRepository.save', async () => {
-		vi.spyOn(mockRepository, 'save').mockRejectedValue(new Error('Database error'))
+	it('publishes a provider-saved event', async () => {
+		const publishSpy = vi.spyOn(mockEventBus, 'publish')
 		const configSchema: ConfigurationSchema[] = [
 			{
 				key: 'apiKey',
@@ -147,7 +70,106 @@ describe('UC8 — ProviderUpsert use case', () => {
 				description: 'Key',
 			},
 		]
-		const provider = { id: 'p4', name: 'ErrorProvider', type: 'test', configSchema }
+		const provider = {
+			id: 'p1',
+			name: 'OpenAI',
+			type: 'openai',
+			configSchema,
+		}
+		await useCase.execute(provider)
+		expect(publishSpy).toHaveBeenCalledWith(
+			expect.objectContaining({
+				type: 'provider-saved',
+				providerId: 'p1',
+				name: 'OpenAI',
+				id: expect.any(String),
+				role: 'system',
+				ts: expect.any(Number),
+			}),
+		)
+	})
+
+	it('publishes event envelope with correct type contract (single argument)', async () => {
+		const publishSpy = vi.spyOn(mockEventBus, 'publish')
+		const configSchema: ConfigurationSchema[] = [
+			{
+				key: 'apiKey',
+				required: true,
+				type: 'string' as const,
+				options: undefined,
+				description: 'Key',
+			},
+		]
+		const provider = {
+			id: 'p2',
+			name: 'Anthropic',
+			type: 'anthropic',
+			configSchema,
+		}
+		await useCase.execute(provider)
+		const envelope = (
+			publishSpy.mock.calls[0] as [
+				{
+					id: string
+					ts: number
+					type: string
+					providerId: string
+					name: string
+					role: string
+				},
+			]
+		)[0]
+		expect(envelope).toHaveProperty('id')
+		expect(envelope).toHaveProperty('ts')
+		expect(typeof envelope.id).toBe('string')
+		expect(typeof envelope.ts).toBe('number')
+		expect(envelope.type).toBe('provider-saved')
+		expect(envelope.providerId).toBe('p2')
+		expect(envelope.name).toBe('Anthropic')
+		expect(envelope.role).toBe('system')
+	})
+
+	it('propagates errors from eventBus.publish', async () => {
+		vi.spyOn(mockRepository, 'save').mockResolvedValue(undefined)
+		vi.spyOn(mockEventBus, 'publish').mockRejectedValue(
+			new Error('Event bus unavailable'),
+		)
+		const configSchema: ConfigurationSchema[] = [
+			{
+				key: 'apiKey',
+				required: true,
+				type: 'string' as const,
+				options: undefined,
+				description: 'Key',
+			},
+		]
+		const provider = { id: 'p3', name: 'Test', type: 'test', configSchema }
+		await expect(useCase.execute(provider)).rejects.toThrow(
+			'Event bus unavailable',
+		)
+	})
+
+	// --- Error paths ---
+
+	it('propagates errors from providerRepository.save', async () => {
+		vi.spyOn(mockRepository, 'save').mockRejectedValue(
+			new Error('Database error'),
+		)
+		const configSchema: ConfigurationSchema[] = [
+			{
+				key: 'apiKey',
+				required: true,
+				type: 'string' as const,
+				options: undefined,
+				description: 'Key',
+			},
+		]
+		const provider = {
+			id: 'p4',
+			name: 'ErrorProvider',
+			type: 'test',
+			configSchema,
+		}
 		await expect(useCase.execute(provider)).rejects.toThrow('Database error')
 	})
 
@@ -165,7 +187,11 @@ describe('UC8 — ProviderUpsert use case', () => {
 				description: 'Key',
 			},
 		]
-		const provider = { id: 'p5', type: 'test', configSchema } as unknown as import('@domain/Provider').default
+		const provider = {
+			id: 'p5',
+			type: 'test',
+			configSchema,
+		} as unknown as import('@domain/Provider').default
 		await useCase.execute(provider)
 		expect(saveSpy).toHaveBeenCalledWith(provider)
 		expect(publishSpy).toHaveBeenCalledWith(
@@ -179,7 +205,11 @@ describe('UC8 — ProviderUpsert use case', () => {
 	it('handles provider with missing configSchema (partial provider object)', async () => {
 		const saveSpy = vi.spyOn(mockRepository, 'save')
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-		const provider = { id: 'p6', name: 'NoSchema', type: 'test' } as unknown as import('@domain/Provider').default
+		const provider = {
+			id: 'p6',
+			name: 'NoSchema',
+			type: 'test',
+		} as unknown as import('@domain/Provider').default
 		await useCase.execute(provider)
 		expect(saveSpy).toHaveBeenCalledWith(provider)
 		expect(publishSpy).toHaveBeenCalledWith(
@@ -205,7 +235,7 @@ describe('UC8 — ProviderUpsert use case', () => {
 		]
 		const provider = { id: 'p7', name: 'UUID Test', type: 'test', configSchema }
 		await useCase.execute(provider)
-		const envelope = (publishSpy.mock.calls[0] as [object])[0] as { id: string }
+		const envelope = (publishSpy.mock.calls[0] as [{ id: string }])[0]
 		expect(typeof envelope.id).toBe('string')
 		expect(envelope.id.length).toBeGreaterThan(0)
 	})
@@ -222,10 +252,15 @@ describe('UC8 — ProviderUpsert use case', () => {
 				description: 'Key',
 			},
 		]
-		const provider = { id: 'p8', name: 'Timestamp Test', type: 'test', configSchema }
+		const provider = {
+			id: 'p8',
+			name: 'Timestamp Test',
+			type: 'test',
+			configSchema,
+		}
 		await useCase.execute(provider)
 		const after = Date.now()
-		const envelope = (publishSpy.mock.calls[0] as [object])[0] as { ts: number }
+		const envelope = (publishSpy.mock.calls[0] as [{ ts: number }])[0]
 		expect(Number.isInteger(envelope.ts)).toBe(true)
 		expect(envelope.ts).toBeLessThanOrEqual(after)
 		expect(envelope.ts).toBeGreaterThanOrEqual(before)
@@ -288,11 +323,17 @@ describe('UC8 — ProviderUpsert use case', () => {
 				description: 'Key',
 			},
 		]
-		const provider = { id: 'p9', name: 'Edge Case Provider', type: 'custom', configSchema }
+		const provider = {
+			id: 'p9',
+			name: 'Edge Case Provider',
+			type: 'custom',
+			configSchema,
+		}
 		await useCase.execute(provider)
-		const envelope = (publishSpy.mock.calls[0] as [object])[0] as { providerId: string; name: string }
+		const envelope = (
+			publishSpy.mock.calls[0] as [{ providerId: string; name: string }]
+		)[0]
 		expect(envelope.providerId).toBe('p9')
 		expect(envelope.name).toBe('Edge Case Provider')
 	})
-
 })
