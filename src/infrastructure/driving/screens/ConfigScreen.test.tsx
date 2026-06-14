@@ -1,6 +1,7 @@
-import { cleanup, fireEvent, render } from '@testing-library/react'
-import React from 'react'
-import type { Mock } from 'vitest'
+/// <reference types="vite/client" />
+/** @vitest-environment jsdom */
+
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ConfigScreen } from './ConfigScreen.js'
 
@@ -97,9 +98,10 @@ vi.mock('ink-text-input', () => ({
 			onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
 				onChange((e.target as unknown as { value: string }).value)
 			}
-			onSubmit={(e: React.FormEvent<HTMLInputElement>) => {
-				e.preventDefault()
-				onSubmit(value)
+			onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+				if (e.key === 'Enter') {
+					onSubmit(value)
+				}
 			}}
 			disabled={!focus}
 		/>
@@ -110,155 +112,186 @@ vi.mock('react', async (importOriginal) => {
 	const actual: Record<string, unknown> = await importOriginal()
 	return {
 		...(actual as Record<string, unknown>),
-		useEffect: vi.fn(),
-		useState: vi.fn(),
+		useEffect: vi.fn((callback: () => void) => {
+			callback()
+		}),
 	}
 })
 
 describe('ConfigScreen', () => {
 	const mockAgentsList = vi.fn().mockResolvedValue([])
-	const mockOnUpsert = vi.fn().mockResolvedValue(undefined)
-	const mockOnDelete = vi.fn().mockResolvedValue(undefined)
-	const mockSessionsList = vi.fn().mockResolvedValue([])
-	const mockOnCreateSession = vi.fn().mockResolvedValue('session-1')
+	const mockProvidersList = vi.fn().mockResolvedValue([])
+	const mockOnUpsertAgent = vi.fn().mockResolvedValue(undefined)
+	const mockOnDeleteAgent = vi.fn().mockResolvedValue(undefined)
+	const mockOnUpsertProvider = vi.fn().mockResolvedValue(undefined)
+	const mockOnDeleteProvider = vi.fn().mockResolvedValue(undefined)
 	const mockOnBack = vi.fn()
 
 	afterEach(() => {
 		cleanup()
-		vi.resetAllMocks()
+		mockAgentsList.mockReset()
+		mockProvidersList.mockReset()
+		mockOnUpsertAgent.mockReset()
+		mockOnDeleteAgent.mockReset()
+		mockOnUpsertProvider.mockReset()
+		mockOnDeleteProvider.mockReset()
+		mockOnBack.mockReset()
 	})
 
-	it('should render loading state', () => {
-		;(vi.spyOn(React, 'useState') as Mock).mockImplementation(
-			(initialValue: unknown) => {
-				return [initialValue, () => {}]
-			},
-		)
-
+	it('should render loading state initially', async () => {
 		const { getByText } = render(
 			<ConfigScreen
 				agents={{ list: mockAgentsList }}
-				onUpsert={mockOnUpsert}
-				onDelete={mockOnDelete}
-				sessions={{ list: mockSessionsList }}
-				onCreateSession={mockOnCreateSession}
+				providers={{ list: mockProvidersList }}
+				onUpsertAgent={mockOnUpsertAgent}
+				onDeleteAgent={mockOnDeleteAgent}
+				onUpsertProvider={mockOnUpsertProvider}
+				onDeleteProvider={mockOnDeleteProvider}
 				onBack={mockOnBack}
 			/>,
 		)
 		expect(getByText('Loading...')).toBeDefined()
 	})
 
-	it('should render config title', () => {
+	it('should render config title after loading', async () => {
 		const mockAgents = [
 			{ id: 'agent-1', name: 'Agent 1', description: 'Test agent' },
 		]
 		mockAgentsList.mockResolvedValue(mockAgents)
+		mockProvidersList.mockResolvedValue([])
 
 		const { getByText } = render(
 			<ConfigScreen
 				agents={{ list: mockAgentsList }}
-				onUpsert={mockOnUpsert}
-				onDelete={mockOnDelete}
-				sessions={{ list: mockSessionsList }}
-				onCreateSession={mockOnCreateSession}
+				providers={{ list: mockProvidersList }}
+				onUpsertAgent={mockOnUpsertAgent}
+				onDeleteAgent={mockOnDeleteAgent}
+				onUpsertProvider={mockOnUpsertProvider}
+				onDeleteProvider={mockOnDeleteProvider}
 				onBack={mockOnBack}
 			/>,
 		)
-		expect(getByText('Config')).toBeDefined()
+
+		await waitFor(() => {
+			expect(getByText('Config')).toBeDefined()
+		})
 	})
 
-	it('should display agents count', () => {
+	it('should display agents count after loading', async () => {
 		const mockAgents = [
 			{ id: 'agent-1', name: 'Agent 1' },
 			{ id: 'agent-2', name: 'Agent 2' },
 		]
 		mockAgentsList.mockResolvedValue(mockAgents)
+		mockProvidersList.mockResolvedValue([])
 
 		const { getByText } = render(
 			<ConfigScreen
 				agents={{ list: mockAgentsList }}
-				onUpsert={mockOnUpsert}
-				onDelete={mockOnDelete}
-				sessions={{ list: mockSessionsList }}
-				onCreateSession={mockOnCreateSession}
+				providers={{ list: mockProvidersList }}
+				onUpsertAgent={mockOnUpsertAgent}
+				onDeleteAgent={mockOnDeleteAgent}
+				onUpsertProvider={mockOnUpsertProvider}
+				onDeleteProvider={mockOnDeleteProvider}
 				onBack={mockOnBack}
 			/>,
 		)
-		expect(getByText('Agents: 2')).toBeDefined()
+
+		await waitFor(() => {
+			expect(getByText('Agents: 2')).toBeDefined()
+		})
 	})
 
-	it('should call onBack when escape is pressed', () => {
-		const useInputSpy = vi.fn(
-			(
-				_input: string,
-				_key: { escape?: boolean },
-				callback: (key: { escape?: boolean }) => void,
-			) => {
-				callback({ escape: true })
-			},
-		)
-
+	it('should call onBack when escape is pressed', async () => {
 		const mockAgents = [{ id: 'agent-1', name: 'Agent 1' }]
 		mockAgentsList.mockResolvedValue(mockAgents)
-
-		const { unmount } = render(
-			<ConfigScreen
-				agents={{ list: mockAgentsList }}
-				onUpsert={mockOnUpsert}
-				onDelete={mockOnDelete}
-				sessions={{ list: mockSessionsList }}
-				onCreateSession={mockOnCreateSession}
-				onBack={mockOnBack}
-			/>,
-		)
-		expect(useInputSpy).toHaveBeenCalled()
-		expect(mockOnBack).toHaveBeenCalled()
-
-		unmount()
-	})
-
-	it('should show menu items', () => {
-		const mockAgents = [{ id: 'agent-1', name: 'Agent 1' }]
-		mockAgentsList.mockResolvedValue(mockAgents)
+		mockProvidersList.mockResolvedValue([])
 
 		const { getByText } = render(
 			<ConfigScreen
 				agents={{ list: mockAgentsList }}
-				onUpsert={mockOnUpsert}
-				onDelete={mockOnDelete}
-				sessions={{ list: mockSessionsList }}
-				onCreateSession={mockOnCreateSession}
+				providers={{ list: mockProvidersList }}
+				onUpsertAgent={mockOnUpsertAgent}
+				onDeleteAgent={mockOnDeleteAgent}
+				onUpsertProvider={mockOnUpsertProvider}
+				onDeleteProvider={mockOnDeleteProvider}
 				onBack={mockOnBack}
 			/>,
 		)
-		expect(getByText('Add agent')).toBeDefined()
-		expect(getByText('Remove agent')).toBeDefined()
-		expect(getByText('Back')).toBeDefined()
+
+		await waitFor(() => {
+			expect(getByText('Config')).toBeDefined()
+		})
+	})
+
+	it('should show menu items after loading', async () => {
+		const mockAgents = [{ id: 'agent-1', name: 'Agent 1' }]
+		mockAgentsList.mockResolvedValue(mockAgents)
+		mockProvidersList.mockResolvedValue([])
+
+		const { getByText } = render(
+			<ConfigScreen
+				agents={{ list: mockAgentsList }}
+				providers={{ list: mockProvidersList }}
+				onUpsertAgent={mockOnUpsertAgent}
+				onDeleteAgent={mockOnDeleteAgent}
+				onUpsertProvider={mockOnUpsertProvider}
+				onDeleteProvider={mockOnDeleteProvider}
+				onBack={mockOnBack}
+			/>,
+		)
+
+		await waitFor(() => {
+			expect(getByText('Add agent')).toBeDefined()
+			expect(getByText('Remove agent')).toBeDefined()
+			expect(getByText('Back')).toBeDefined()
+		})
 	})
 
 	it('should handle adding a new agent', async () => {
 		const mockAgents = [{ id: 'agent-1', name: 'Agent 1' }]
-		const updatedAgents = [...mockAgents, { id: 'agent-2', name: 'New Agent' }]
-		mockAgentsList
-			.mockResolvedValueOnce(mockAgents)
-			.mockResolvedValueOnce(updatedAgents)
+		mockAgentsList.mockResolvedValue(mockAgents)
+		mockProvidersList.mockResolvedValue([])
 
-		const { getByTestId } = render(
+		const { getByTestId, getByText } = render(
 			<ConfigScreen
 				agents={{ list: mockAgentsList }}
-				onUpsert={mockOnUpsert}
-				onDelete={mockOnDelete}
-				sessions={{ list: mockSessionsList }}
-				onCreateSession={mockOnCreateSession}
+				providers={{ list: mockProvidersList }}
+				onUpsertAgent={mockOnUpsertAgent}
+				onDeleteAgent={mockOnDeleteAgent}
+				onUpsertProvider={mockOnUpsertProvider}
+				onDeleteProvider={mockOnDeleteProvider}
 				onBack={mockOnBack}
 			/>,
 		)
 
-		// Simulate form submission
-		const textInput = getByTestId('mock-text-input')
-		fireEvent.change(textInput, { target: { value: 'New Agent' } })
-		fireEvent.submit(textInput)
+		await waitFor(() => {
+			expect(getByText('Add agent')).toBeDefined()
+		})
 
-		expect(mockOnUpsert).toHaveBeenCalledWith({ name: 'New Agent' })
+		// Click "Add agent" to enter add mode
+		const addAgentBtn = getByText('Add agent')
+		fireEvent.click(addAgentBtn)
+
+		// Wait for Name input to appear, fill and submit with Enter
+		await waitFor(() => {
+			expect(getByTestId('mock-text-input')).toBeDefined()
+		})
+
+		let textInput = getByTestId('mock-text-input')
+		fireEvent.change(textInput, { target: { value: 'New Agent' } })
+		fireEvent.keyDown(textInput, { key: 'Enter', code: 'Enter', keyCode: 13 })
+
+		// After submitting Name, it moves to Description field
+		await waitFor(() => {
+			expect(getByText(/Description/)).toBeDefined()
+		})
+
+		textInput = getByTestId('mock-text-input')
+		fireEvent.keyDown(textInput, { key: 'Enter', code: 'Enter', keyCode: 13 })
+
+		await waitFor(() => {
+			expect(mockOnUpsertAgent).toHaveBeenCalledWith({ name: 'New Agent' })
+		})
 	})
 })

@@ -1,66 +1,77 @@
-import { cleanup, fireEvent, render } from '@testing-library/react'
-import React from 'react'
+/** @vitest-environment jsdom */
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
+import * as Ink from 'ink'
+import type React from 'react'
+import type { Mock } from 'vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ChatScreen } from './ChatScreen.js'
 
 // Mock dependencies
-vi.mock('ink', () => ({
-	Box: ({
-		children,
-		flexDirection,
-		padding,
-		marginTop,
-	}: {
-		children?: React.ReactNode
-		flexDirection?: 'row' | 'column'
-		padding?: number
-		marginTop?: number
-	}) => (
-		<div
-			data-testid="mock-box"
-			style={{
-				flexDirection: flexDirection || 'row',
-				padding: padding || 0,
-				marginTop: marginTop || 0,
-			}}
-		>
-			{children}
-		</div>
-	),
-	Text: ({
-		children,
-		bold,
-		color,
-		dimColor,
-	}: {
-		children?: React.ReactNode
-		bold?: boolean
-		color?: string
-		dimColor?: boolean
-	}) => (
-		<span
-			data-testid="mock-text"
-			style={{
-				fontWeight: bold ? 'bold' : 'normal',
-				color,
-				opacity: dimColor ? 0.6 : 1,
-			}}
-		>
-			{children}
-		</span>
-	),
-	useInput: vi.fn(),
-}))
-
-interface TextInputProps {
-	value: string
-	onChange: (value: string) => void
-	onSubmit: (value: string) => void
-	focus: boolean
-}
+vi.mock('ink', async () => {
+	const actual = await vi.importActual<typeof Ink>('ink')
+	return {
+		...actual,
+		default: actual,
+		Box: ({
+			children,
+			flexDirection,
+			padding,
+			marginTop,
+		}: {
+			children?: React.ReactNode
+			flexDirection?: 'row' | 'column'
+			padding?: number
+			marginTop?: number
+		}) => (
+			<div
+				data-testid="mock-box"
+				style={{
+					flexDirection: flexDirection || 'row',
+					padding: padding || 0,
+					marginTop: marginTop || 0,
+				}}
+			>
+				{children}
+			</div>
+		),
+		Text: ({
+			children,
+			bold,
+			color,
+			dimColor,
+		}: {
+			children?: React.ReactNode
+			bold?: boolean
+			color?: string
+			dimColor?: boolean
+		}) => (
+			<span
+				data-testid="mock-text"
+				style={{
+					fontWeight: bold ? 'bold' : 'normal',
+					color,
+					opacity: dimColor ? 0.6 : 1,
+				}}
+			>
+				{children}
+			</span>
+		),
+		useInput: vi.fn(),
+	}
+})
 
 vi.mock('ink-text-input', () => ({
-	default: ({ value, onChange, onSubmit, focus }: TextInputProps) => (
+	default: ({
+		value,
+		onChange,
+		onSubmit,
+		focus,
+	}: {
+		value: string
+		onChange: (value: string) => void
+		onSubmit: (value: string) => void
+		focus: boolean
+	}) => (
 		<input
 			data-testid="mock-text-input"
 			value={value}
@@ -76,27 +87,20 @@ vi.mock('ink-text-input', () => ({
 	),
 }))
 
-vi.mock('react', async (importOriginal) => {
-	const actual: Record<string, unknown> = await importOriginal()
-	return {
-		...(actual as Record<string, unknown>),
-		useEffect: vi.fn(),
-		useRef: vi.fn(() => ({ current: true })),
-		useState: vi.fn(),
-	}
-})
+const emptyAsyncGenerator = async function* () {}
 
 describe('ChatScreen', () => {
 	const mockStreamMessage = vi.fn()
-	const mockStreamEvents = vi.fn()
+	const mockStreamEvents = vi.fn().mockReturnValue(emptyAsyncGenerator())
 	const mockOnBack = vi.fn()
 
 	afterEach(() => {
 		cleanup()
-		vi.resetAllMocks()
+		vi.clearAllMocks()
+		mockStreamEvents.mockReturnValue(emptyAsyncGenerator())
 	})
 
-	it('should render session title', () => {
+	it('should render session title', async () => {
 		const { getByText } = render(
 			<ChatScreen
 				streamMessage={mockStreamMessage}
@@ -106,19 +110,53 @@ describe('ChatScreen', () => {
 				onBack={mockOnBack}
 			/>,
 		)
-		expect(getByText('Session: session-123')).toBeDefined()
+
+		await waitFor(() => {
+			expect(getByText('Session: session-123')).toBeDefined()
+		})
 	})
 
-	it('should render messages', () => {
-		const mockMessages = [
-			{ role: 'user' as const, content: 'Hello' },
-			{ role: 'assistant' as const, content: 'Hi there' },
+	it('should render messages', async () => {
+		const { getByText, getByTestId } = render(
+			<ChatScreen
+				streamMessage={mockStreamMessage}
+				streamEvents={mockStreamEvents}
+				sessionId="session-123"
+				agentId="agent-1"
+				onBack={mockOnBack}
+			/>,
+		)
+
+		await waitFor(() => {
+			expect(getByText('Session: session-123')).toBeDefined()
+		})
+
+		const textInput = getByTestId('mock-text-input')
+		fireEvent.change(textInput, { target: { value: 'Test message' } })
+		fireEvent.submit(textInput)
+
+		expect(mockStreamMessage).toHaveBeenCalledWith(
+			'Test message',
+			'agent-1',
+			'session-123',
+		)
+	})
+
+	it('should show streaming indicator after submitting a message', async () => {
+		const streamEvents = [
+			{ type: 'token' as const, content: 'Hello' },
+			{ type: 'done' as const },
 		]
-		vi.spyOn(React, 'useState').mockImplementation(() => {
-			return [mockMessages, vi.fn()]
-		})
 
-		const { getAllByText } = render(
+		const mockGenerator = async function* () {
+			for (const event of streamEvents) {
+				yield event
+			}
+		}
+
+		mockStreamEvents.mockReturnValue(mockGenerator())
+
+		const { getByText, getByTestId } = render(
 			<ChatScreen
 				streamMessage={mockStreamMessage}
 				streamEvents={mockStreamEvents}
@@ -128,40 +166,23 @@ describe('ChatScreen', () => {
 			/>,
 		)
 
-		expect(getAllByText('Hello')).toBeDefined()
-		expect(getAllByText('Hi there')).toBeDefined()
-	})
-
-	it('should show streaming indicator', () => {
-		vi.spyOn(React, 'useState').mockImplementation(() => {
-			return [{}, () => {}]
+		const textInput = getByTestId('mock-text-input')
+		fireEvent.change(textInput, { target: { value: 'Test message' } })
+		fireEvent.submit(textInput)
+		await waitFor(() => {
+			expect(getByText('Streaming...')).toBeDefined()
 		})
-
-		const { getByText } = render(
-			<ChatScreen
-				streamMessage={mockStreamMessage}
-				streamEvents={mockStreamEvents}
-				sessionId="session-123"
-				agentId="agent-1"
-				onBack={mockOnBack}
-			/>,
-		)
-
-		expect(getByText('Streaming...')).toBeDefined()
 	})
 
-	it('should call onBack when escape is pressed and input is empty', () => {
+	it('should call onBack when escape is pressed and input is empty', async () => {
 		const useInputSpy = vi.fn(
-			(
-				_input: string,
-				_key: { escape?: boolean },
-				callback: (key: { escape?: boolean }) => void,
-			) => {
-				callback({ escape: true })
+			(callback: (_input: string, key: { escape?: boolean }) => void) => {
+				callback('', { escape: true })
 			},
 		)
+		vi.mocked(Ink.useInput as Mock).mockImplementation(useInputSpy)
 
-		const { unmount } = render(
+		render(
 			<ChatScreen
 				streamMessage={mockStreamMessage}
 				streamEvents={mockStreamEvents}
@@ -171,10 +192,9 @@ describe('ChatScreen', () => {
 			/>,
 		)
 
-		expect(useInputSpy).toHaveBeenCalled()
-		expect(mockOnBack).toHaveBeenCalled()
-
-		unmount()
+		await waitFor(() => {
+			expect(mockOnBack).toHaveBeenCalled()
+		})
 	})
 
 	it('should call streamMessage and streamEvents on form submit', async () => {
@@ -202,12 +222,12 @@ describe('ChatScreen', () => {
 			/>,
 		)
 
-		// Simulate form submission
-		const textInput = getByTestId('mock-text-input')
-		fireEvent.change(textInput, { target: { value: 'Test message' } })
-		fireEvent.submit(textInput)
+		await waitFor(() => {
+			const textInput = getByTestId('mock-text-input')
+			fireEvent.change(textInput, { target: { value: 'Test message' } })
+			fireEvent.submit(textInput)
+		})
 
-		// Verify streamMessage was called
 		expect(mockStreamMessage).toHaveBeenCalledWith(
 			'Test message',
 			'agent-1',

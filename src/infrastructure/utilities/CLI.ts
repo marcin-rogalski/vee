@@ -1,5 +1,6 @@
 import type Agent from '@domain/Agent'
 import { AppError } from '@domain/errors'
+import type Provider from '@domain/Provider'
 import { Command } from 'commander'
 import { render } from 'ink'
 import React from 'react'
@@ -69,7 +70,7 @@ export default class CLI {
 				component: ConfigScreen,
 				props: (navigate) => ({
 					agents: { list: core.agentList.execute.bind(core.agentList) },
-					onUpsert: (agent: {
+					onUpsertAgent: (agent: {
 						id?: string
 						name: string
 						description?: string
@@ -82,7 +83,22 @@ export default class CLI {
 							providerConfiguration: {},
 							toolIds: [],
 						} as Agent),
-					onDelete: core.agentDelete.execute,
+					onDeleteAgent: core.agentDelete.execute,
+					providers: {
+						list: core.providerList.execute.bind(core.providerList),
+					},
+					onUpsertProvider: (provider: {
+						id?: string
+						name: string
+						type: string
+					}) =>
+						core.providerUpsert.execute({
+							id: provider.id ?? '',
+							name: provider.name,
+							type: provider.type,
+							configSchema: [],
+						} as Provider),
+					onDeleteProvider: core.providerDelete.execute,
 					sessions: { list: core.sessionList.execute.bind(core.sessionList) },
 					onCreateSession: core.sessionCreate.execute,
 					onBack: () => navigate('menu'),
