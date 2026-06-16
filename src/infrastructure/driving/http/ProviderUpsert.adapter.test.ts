@@ -63,42 +63,39 @@ describe('ProviderUpsert', () => {
 			id: 'prov-1',
 			name: 'OpenAI',
 			type: 'llm',
-			configSchema: [
-				{
-					key: 'model',
-					required: true,
-					type: 'string',
-					options: ['gpt-4', 'gpt-3.5'],
-					description: 'Model name',
+			configSchema: {
+				$schema: 'https://json-schema.org/draft/2020-12/schema',
+				type: 'object',
+				properties: {
+					model: {
+						type: 'string',
+						description: 'Model name',
+						enum: ['gpt-4', 'gpt-3.5'],
+					},
+					temperature: { type: 'number', description: 'Temperature setting' },
 				},
-				{
-					key: 'temperature',
-					required: false,
-					type: 'number',
-					description: 'Temperature setting',
-				},
-			],
+				required: ['model'],
+			},
 		}
 
 		const expectedProvider = {
 			id: 'prov-1',
 			name: 'OpenAI',
 			type: 'llm',
-			configSchema: [
-				{
-					key: 'model',
-					required: true,
-					type: 'string',
-					options: ['gpt-4', 'gpt-3.5'],
-					description: 'Model name',
+			config: {},
+			configSchema: {
+				$schema: 'https://json-schema.org/draft/2020-12/schema',
+				type: 'object',
+				properties: {
+					model: {
+						type: 'string',
+						description: 'Model name',
+						enum: ['gpt-4', 'gpt-3.5'],
+					},
+					temperature: { type: 'number', description: 'Temperature setting' },
 				},
-				{
-					key: 'temperature',
-					required: false,
-					type: 'number',
-					description: 'Temperature setting',
-				},
-			],
+				required: ['model'],
+			},
 		}
 
 		const mockReq = {

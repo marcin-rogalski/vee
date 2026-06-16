@@ -3,7 +3,7 @@ interface AgentDto {
 	name: string
 	description?: string
 	providerId: string
-	providerConfiguration: Record<string, unknown>
+	providerOverrides: Record<string, unknown>
 	toolIds: string[]
 }
 

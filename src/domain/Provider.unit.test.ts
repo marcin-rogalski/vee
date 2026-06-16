@@ -1,41 +1,52 @@
 import { describe, expect, it } from 'vitest'
-import type ConfigurationSchema from './ConfigurationSchema'
+import type { JsonSchemaObject } from './JsonSchema'
+import { isTypedProperty } from './JsonSchema'
 import type Provider from './Provider'
 
 describe('D2 — Provider type shape', () => {
-	const validSchema: ConfigurationSchema = {
-		key: 'apiKey',
-		required: true,
-		type: 'string',
-		options: ['key1', 'key2'],
-		description: 'The API key',
+	const validSchema: JsonSchemaObject = {
+		$schema: 'http://json-schema.org/draft-07/schema#',
+		type: 'object',
+		properties: {
+			apiKey: {
+				type: 'string',
+				description: 'The API key',
+			},
+		},
+		required: ['apiKey'],
 	}
 
 	const validProvider: Provider = {
 		id: 'provider-1',
 		name: 'OpenAI',
 		type: 'openai',
-		configSchema: [validSchema],
+		configSchema: validSchema,
+		config: {},
 	}
 
-	it('creates valid Provider with id, name, type, configSchema', () => {
+	it('creates valid Provider with id, name, type, configSchema, config', () => {
 		expect(validProvider.id).toBe('provider-1')
 		expect(validProvider.name).toBe('OpenAI')
 		expect(validProvider.type).toBe('openai')
-		expect(validProvider.configSchema).toEqual([validSchema])
+		expect(validProvider.configSchema).toEqual(validSchema)
+		expect(validProvider.config).toEqual({})
 	})
 
-	it('accepts empty configSchema array', () => {
+	it('accepts empty configSchema object', () => {
 		const providerEmptySchema: Provider = {
 			...validProvider,
-			configSchema: [],
+			configSchema: {
+				$schema: 'http://json-schema.org/draft-07/schema#',
+				type: 'object',
+				properties: {},
+			},
 		}
-		expect(providerEmptySchema.configSchema).toEqual([])
+		expect(providerEmptySchema.configSchema.properties).toEqual({})
 	})
 
 	it('has all required keys present on valid object', () => {
 		const keys = Object.keys(validProvider).sort()
-		const requiredKeys = ['id', 'name', 'type', 'configSchema'].sort()
+		const requiredKeys = ['config', 'configSchema', 'id', 'name', 'type'].sort()
 		expect(keys).toEqual(requiredKeys)
 	})
 
@@ -46,7 +57,8 @@ describe('D2 — Provider type shape', () => {
 			id: 123,
 			name: 'Test',
 			type: 'test',
-			configSchema: [],
+			configSchema: {},
+			config: {},
 		}
 		expect(typeof badIdProvider.id).toBe('number')
 		expect(badIdProvider.id).not.toBeTypeOf('string')
@@ -57,7 +69,8 @@ describe('D2 — Provider type shape', () => {
 			id: null,
 			name: 'Test',
 			type: 'test',
-			configSchema: [],
+			configSchema: {},
+			config: {},
 		}
 		expect(badIdProvider.id).toBeNull()
 	})
@@ -67,7 +80,8 @@ describe('D2 — Provider type shape', () => {
 			id: { nested: 'obj' },
 			name: 'Test',
 			type: 'test',
-			configSchema: [],
+			configSchema: {},
+			config: {},
 		}
 		expect(typeof badIdProvider.id).toBe('object')
 	})
@@ -77,7 +91,8 @@ describe('D2 — Provider type shape', () => {
 			id: 'p1',
 			name: 42,
 			type: 'test',
-			configSchema: [],
+			configSchema: {},
+			config: {},
 		}
 		expect(typeof badNameProvider.name).toBe('number')
 	})
@@ -87,7 +102,8 @@ describe('D2 — Provider type shape', () => {
 			id: 'p1',
 			name: ['a', 'b'],
 			type: 'test',
-			configSchema: [],
+			configSchema: {},
+			config: {},
 		}
 		expect(Array.isArray(badNameProvider.name)).toBe(true)
 	})
@@ -97,7 +113,8 @@ describe('D2 — Provider type shape', () => {
 			id: 'p1',
 			name: 'Test',
 			type: true,
-			configSchema: [],
+			configSchema: {},
+			config: {},
 		}
 		expect(typeof badTypeProvider.type).toBe('boolean')
 	})
@@ -107,55 +124,63 @@ describe('D2 — Provider type shape', () => {
 			id: 'p1',
 			name: 'Test',
 			type: null,
-			configSchema: [],
+			configSchema: {},
+			config: {},
 		}
 		expect(badTypeProvider.type).toBeNull()
 	})
 
-	it('rejects non-array configSchema via runtime shape check (object)', () => {
+	it('rejects non-object configSchema via runtime shape check (array)', () => {
 		const badSchemaProvider: Record<string, unknown> = {
 			id: 'p1',
 			name: 'Test',
 			type: 'test',
-			configSchema: { key: 'val' },
+			configSchema: [],
+			config: {},
 		}
-		expect(typeof badSchemaProvider.configSchema).toBe('object')
-		expect(Array.isArray(badSchemaProvider.configSchema)).toBe(false)
+		expect(Array.isArray(badSchemaProvider.configSchema)).toBe(true)
 	})
 
-	/* ---- Multiple schema entries ---- */
+	/* ---- Multiple schema properties ---- */
 
-	it('accepts multiple items in configSchema array', () => {
-		const schema1: ConfigurationSchema = {
-			key: 'apiKey',
-			required: true,
-			type: 'string',
-			options: ['key1', 'key2'],
-			description: 'The API key',
-		}
-		const schema2: ConfigurationSchema = {
-			key: 'baseUrl',
-			required: false,
-			type: 'string',
-			options: undefined,
-			description: 'Base URL override',
-		}
-		const schema3: ConfigurationSchema = {
-			key: 'timeout',
-			required: true,
-			type: 'number',
-			options: [500, 1000, 5000],
-			description: 'Request timeout in ms',
+	it('accepts multiple properties in configSchema', () => {
+		const multiSchema: JsonSchemaObject = {
+			$schema: 'http://json-schema.org/draft-07/schema#',
+			type: 'object',
+			properties: {
+				apiKey: {
+					type: 'string',
+					description: 'The API key',
+				},
+				baseUrl: {
+					type: 'string',
+					description: 'Base URL override',
+				},
+				timeout: {
+					type: 'number',
+					description: 'Request timeout in ms',
+				},
+			},
+			required: ['apiKey', 'timeout'],
 		}
 		const multiSchemaProvider: Provider = {
 			...validProvider,
-			configSchema: [schema1, schema2, schema3],
+			configSchema: multiSchema,
 		}
-		expect(multiSchemaProvider.configSchema).toHaveLength(3)
-		expect(multiSchemaProvider.configSchema[0]?.key).toBe('apiKey')
-		expect(multiSchemaProvider.configSchema[1]?.key).toBe('baseUrl')
-		expect(multiSchemaProvider.configSchema[2]?.key).toBe('timeout')
-		expect(multiSchemaProvider.configSchema[2]?.type).toBe('number')
+		const props = multiSchemaProvider.configSchema.properties ?? {}
+		expect(Object.keys(props)).toHaveLength(3)
+		const apiKeyProp = props.apiKey
+		if (apiKeyProp && isTypedProperty(apiKeyProp)) {
+			expect(apiKeyProp.type).toBe('string')
+		}
+		const baseUrlProp = props.baseUrl
+		if (baseUrlProp && isTypedProperty(baseUrlProp)) {
+			expect(baseUrlProp.type).toBe('string')
+		}
+		const timeoutProp = props.timeout
+		if (timeoutProp && isTypedProperty(timeoutProp)) {
+			expect(timeoutProp.type).toBe('number')
+		}
 	})
 
 	/* ---- Boundary values ---- */
@@ -167,6 +192,15 @@ describe('D2 — Provider type shape', () => {
 		}
 		expect(emptyIdProvider.id).toBe('')
 		expect(emptyIdProvider.id.length).toBe(0)
+	})
+
+	it('accepts config with shared values', () => {
+		const providerWithConfig: Provider = {
+			...validProvider,
+			config: { apiKey: 'sk-123', baseUrl: 'https://api.openai.com' },
+		}
+		expect(providerWithConfig.config.apiKey).toBe('sk-123')
+		expect(providerWithConfig.config.baseUrl).toBe('https://api.openai.com')
 	})
 
 	it('accepts empty string for name', () => {

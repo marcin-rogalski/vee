@@ -7,7 +7,7 @@ describe('DTO — AgentDto', () => {
 			id: 'agent-123',
 			name: 'Test Agent',
 			providerId: 'provider-1',
-			providerConfiguration: {},
+			providerOverrides: {},
 			toolIds: [],
 		}
 
@@ -19,7 +19,7 @@ describe('DTO — AgentDto', () => {
 			id: 'agent-123',
 			name: 'Test Agent',
 			providerId: 'provider-1',
-			providerConfiguration: {},
+			providerOverrides: {},
 			toolIds: [],
 		}
 
@@ -31,23 +31,23 @@ describe('DTO — AgentDto', () => {
 			id: 'agent-123',
 			name: 'Test Agent',
 			providerId: 'provider-1',
-			providerConfiguration: {},
+			providerOverrides: {},
 			toolIds: [],
 		}
 
 		expect(agent.providerId).toBe('provider-1')
 	})
 
-	it('has required providerConfiguration field', () => {
+	it('has required providerOverrides field', () => {
 		const agent: AgentDto = {
 			id: 'agent-123',
 			name: 'Test Agent',
 			providerId: 'provider-1',
-			providerConfiguration: { apiKey: 'secret' },
+			providerOverrides: { apiKey: 'secret' },
 			toolIds: [],
 		}
 
-		expect(agent.providerConfiguration).toEqual({ apiKey: 'secret' })
+		expect(agent.providerOverrides).toEqual({ apiKey: 'secret' })
 	})
 
 	it('has required toolIds field', () => {
@@ -55,7 +55,7 @@ describe('DTO — AgentDto', () => {
 			id: 'agent-123',
 			name: 'Test Agent',
 			providerId: 'provider-1',
-			providerConfiguration: {},
+			providerOverrides: {},
 			toolIds: ['tool-1', 'tool-2'],
 		}
 
@@ -68,7 +68,7 @@ describe('DTO — AgentDto', () => {
 			name: 'Test Agent',
 			description: 'This is a test agent',
 			providerId: 'provider-1',
-			providerConfiguration: {},
+			providerOverrides: {},
 			toolIds: [],
 		}
 
@@ -78,19 +78,19 @@ describe('DTO — AgentDto', () => {
 			id: 'agent-123',
 			name: 'Test Agent',
 			providerId: 'provider-1',
-			providerConfiguration: {},
+			providerOverrides: {},
 			toolIds: [],
 		}
 
 		expect(agentWithoutDescription.description).toBeUndefined()
 	})
 
-	it('has complex providerConfiguration object', () => {
+	it('has complex providerOverrides object', () => {
 		const agent: AgentDto = {
 			id: 'agent-123',
 			name: 'Test Agent',
 			providerId: 'provider-1',
-			providerConfiguration: {
+			providerOverrides: {
 				apiKey: 'secret',
 				endpoint: 'https://api.example.com',
 				settings: {
@@ -101,7 +101,7 @@ describe('DTO — AgentDto', () => {
 			toolIds: [],
 		}
 
-		expect(agent.providerConfiguration).toEqual({
+		expect(agent.providerOverrides).toEqual({
 			apiKey: 'secret',
 			endpoint: 'https://api.example.com',
 			settings: {
@@ -116,7 +116,7 @@ describe('DTO — AgentDto', () => {
 			id: 'agent-123',
 			name: 'Test Agent',
 			providerId: 'provider-1',
-			providerConfiguration: {},
+			providerOverrides: {},
 			toolIds: [],
 		}
 
@@ -128,7 +128,7 @@ describe('DTO — AgentDto', () => {
 			id: 'agent-123',
 			name: 'Test Agent',
 			providerId: 'provider-1',
-			providerConfiguration: {},
+			providerOverrides: {},
 			toolIds: ['tool-1', 'tool-2', 'tool-3', 'tool-4', 'tool-5'],
 		}
 
@@ -141,7 +141,7 @@ describe('DTO — AgentDto', () => {
 			name: 'Test Agent',
 			description: 'Test description',
 			providerId: 'provider-1',
-			providerConfiguration: { key: 'value' },
+			providerOverrides: { key: 'value' },
 			toolIds: ['tool-1'],
 		}
 

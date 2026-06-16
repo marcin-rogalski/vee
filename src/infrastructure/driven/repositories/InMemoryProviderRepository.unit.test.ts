@@ -14,7 +14,12 @@ describe('R5 — InMemoryProviderRepository', () => {
 			id: 'p1',
 			name: 'OpenAI',
 			type: 'openai',
-			configSchema: [],
+			configSchema: {
+				$schema: 'http://json-schema.org/draft-07/schema#',
+				type: 'object',
+				properties: {},
+			},
+			config: {},
 		}
 		await repo.save(provider)
 		const retrieved = await repo.get('p1')
@@ -33,13 +38,23 @@ describe('R5 — InMemoryProviderRepository', () => {
 			id: 'p1',
 			name: 'OpenAI',
 			type: 'openai',
-			configSchema: [],
+			configSchema: {
+				$schema: 'http://json-schema.org/draft-07/schema#',
+				type: 'object',
+				properties: {},
+			},
+			config: {},
 		})
 		await repo.save({
 			id: 'p2',
 			name: 'Anthropic',
 			type: 'anthropic',
-			configSchema: [],
+			configSchema: {
+				$schema: 'http://json-schema.org/draft-07/schema#',
+				type: 'object',
+				properties: {},
+			},
+			config: {},
 		})
 		const result = await repo.list()
 		expect(Array.isArray(result)).toBe(true)
@@ -53,7 +68,12 @@ describe('R5 — InMemoryProviderRepository', () => {
 			id: 'p1',
 			name: 'OpenAI',
 			type: 'openai',
-			configSchema: [],
+			configSchema: {
+				$schema: 'http://json-schema.org/draft-07/schema#',
+				type: 'object',
+				properties: {},
+			},
+			config: {},
 		})
 		await repo.delete('p1')
 		await expect(repo.get('p1')).rejects.toThrow()

@@ -13,10 +13,11 @@ describe('UC2 — AgentList use case', () => {
 				name: 'Test',
 				systemPrompt: '',
 				providerId: 'p1',
-				providerConfiguration: {},
+				providerOverrides: {},
 				toolIds: [],
 			}),
 			list: async () => [],
+			listByProviderId: async () => [],
 			save: async () => {},
 			delete: async () => {},
 		}

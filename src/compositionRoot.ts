@@ -16,6 +16,7 @@ import ProviderUpsertUseCase from '@application/usecases/ProviderUpsert.usecase'
 import SessionCreateUseCase from '@application/usecases/SessionCreate.usecase'
 import SessionDeleteUseCase from '@application/usecases/SessionDelete.usecase'
 import SessionListUseCase from '@application/usecases/SessionList.usecase'
+import OpenAIProvider from '@infrastructure/driven/providers/OpenAIProvider'
 import DefaultProviderRegistry from '@infrastructure/driven/registries/DefaultProviderRegistry'
 import ToolRegistry from '@infrastructure/driven/registries/ToolRegistry'
 import InMemoryAgentRepository from '@infrastructure/driven/repositories/InMemoryAgentRepository'
@@ -55,6 +56,11 @@ const sessionRepository = new InMemorySessionRepository()
 const contextRepository = new InMemoryContextRepository()
 const toolRegistry = new ToolRegistry()
 const providerRegistry = new DefaultProviderRegistry()
+providerRegistry.register(
+	'openai',
+	() => new OpenAIProvider('openai-default'),
+	OpenAIProvider.CONFIG_SCHEMA,
+)
 const eventBus = new InMemoryEventBus()
 
 const compositionRoot: CompositionRoot = {
@@ -67,12 +73,21 @@ const compositionRoot: CompositionRoot = {
 	toolRegistry,
 	providerRegistry,
 	eventBus,
-	agentUpsert: new AgentUpsertUseCase(agentRepository, eventBus),
+	agentUpsert: new AgentUpsertUseCase(
+		agentRepository,
+		providerRepository,
+		toolRegistry,
+		eventBus,
+	),
 	agentList: new AgentListUseCase(agentRepository),
 	agentDelete: new AgentDeleteUseCase(agentRepository, eventBus),
 	providerUpsert: new ProviderUpsertUseCase(providerRepository, eventBus),
 	providerList: new ProviderListUseCase(providerRepository),
-	providerDelete: new ProviderDeleteUseCase(providerRepository, eventBus),
+	providerDelete: new ProviderDeleteUseCase(
+		providerRepository,
+		agentRepository,
+		eventBus,
+	),
 	sessionCreate: new SessionCreateUseCase(sessionRepository, eventBus),
 	sessionList: new SessionListUseCase(sessionRepository),
 	sessionDelete: new SessionDeleteUseCase(sessionRepository, eventBus),

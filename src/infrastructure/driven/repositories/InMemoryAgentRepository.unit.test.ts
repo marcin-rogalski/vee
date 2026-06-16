@@ -15,7 +15,7 @@ describe('R3 — InMemoryAgentRepository', () => {
 			name: 'Test Agent',
 			systemPrompt: 'Be helpful',
 			providerId: 'p1',
-			providerConfiguration: {},
+			providerOverrides: {},
 			toolIds: [],
 		}
 		await repo.save(agent)
@@ -36,7 +36,7 @@ describe('R3 — InMemoryAgentRepository', () => {
 			name: 'Agent One',
 			systemPrompt: '',
 			providerId: 'p1',
-			providerConfiguration: {},
+			providerOverrides: {},
 			toolIds: [],
 			description: 'First',
 		})
@@ -45,7 +45,7 @@ describe('R3 — InMemoryAgentRepository', () => {
 			name: 'Agent Two',
 			systemPrompt: '',
 			providerId: 'p1',
-			providerConfiguration: {},
+			providerOverrides: {},
 			toolIds: [],
 		})
 		const result = await repo.list()
@@ -65,7 +65,7 @@ describe('R3 — InMemoryAgentRepository', () => {
 			name: 'Agent One',
 			systemPrompt: '',
 			providerId: 'p1',
-			providerConfiguration: {},
+			providerOverrides: {},
 			toolIds: [],
 		})
 		const result = await repo.list()
@@ -78,7 +78,7 @@ describe('R3 — InMemoryAgentRepository', () => {
 			name: 'Agent One',
 			systemPrompt: '',
 			providerId: 'p1',
-			providerConfiguration: {},
+			providerOverrides: {},
 			toolIds: [],
 		})
 		await repo.delete('a1')

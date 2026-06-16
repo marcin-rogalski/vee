@@ -26,6 +26,14 @@ class InMemoryAgentRepository implements AgentRepositoryPort {
 		})
 	}
 
+	async listByProviderId(
+		providerId: string,
+	): Promise<Array<Pick<Agent, 'id' | 'name'>>> {
+		return Array.from(this.agents.values())
+			.filter((agent) => agent.providerId === providerId)
+			.map((agent) => ({ id: agent.id, name: agent.name }))
+	}
+
 	async save(agent: Agent): Promise<void> {
 		this.agents.set(agent.id, agent)
 	}

@@ -3,7 +3,7 @@ import type Provider from '@domain/Provider'
 import { useEffect, useState } from 'react'
 
 type AgentItem = Pick<Agent, 'id' | 'name' | 'description'>
-type ProviderItem = Pick<Provider, 'id' | 'name'>
+type ProviderItem = Pick<Provider, 'id' | 'name' | 'type'>
 
 type Props = {
 	agents: { list: () => Promise<AgentItem[]> }

@@ -1,46 +1,84 @@
+import type ProviderRegistryPort from '@application/ports/ProviderRegistry.port'
+import type ToolRegistryPort from '@application/ports/ToolRgistry.port'
 import type Agent from '@domain/Agent'
+import { isTypedProperty } from '@domain/JsonSchema'
 import type Provider from '@domain/Provider'
 import { Box, Text, useInput } from 'ink'
+import SelectInput from 'ink-select-input'
+import TextInput from 'ink-text-input'
 import { useState } from 'react'
 
-import { AddAgentForm, AGENT_ADD_FIELDS } from './components/AddAgentForm'
-import {
-	AddProviderForm,
-	PROVIDER_ADD_FIELDS,
-} from './components/AddProviderForm'
 import { ConfigMenu } from './components/ConfigMenu'
 import { RemoveAgentList } from './components/RemoveAgentList'
 import { RemoveProviderList } from './components/RemoveProviderList'
 import { SaveStatus } from './components/SaveStatus'
+import { SchemaDrivenForm } from './components/SchemaDrivenForm'
 import { useConfigData } from './hooks/useConfigData'
 import { useMultiStepForm } from './hooks/useMultiStepForm'
+
+// Available provider types from the registry
+const AVAILABLE_PROVIDER_TYPES = ['openai']
 
 type Props = {
 	agents: {
 		list: () => Promise<Array<Pick<Agent, 'id' | 'name' | 'description'>>>
 	}
 	onUpsertAgent: (agent: {
-		id?: string
 		name: string
 		description?: string
+		systemPrompt: string
+		providerId: string
+		providerOverrides: Record<string, unknown>
+		toolIds: string[]
 	}) => Promise<void>
 	onDeleteAgent: (id: string) => Promise<void>
-	providers: { list: () => Promise<Array<Pick<Provider, 'id' | 'name'>>> }
+	providers: {
+		list: () => Promise<Array<Pick<Provider, 'id' | 'name' | 'type'>>>
+	}
 	onUpsertProvider: (provider: {
 		id?: string
 		name: string
 		type: string
+		config: Record<string, unknown>
 	}) => Promise<void>
 	onDeleteProvider: (id: string) => Promise<void>
+	providerRegistry: ProviderRegistryPort
+	toolRegistry: ToolRegistryPort
 	onBack: () => void
 }
 
 type Mode =
 	| 'menu'
-	| 'addAgent'
+	| 'addAgentName'
+	| 'addAgentDescription'
+	| 'addAgentPrompt'
+	| 'addAgentProvider'
+	| 'addAgentOverrides'
+	| 'addAgentTools'
 	| 'removeAgent'
-	| 'addProvider'
+	| 'addProviderType'
+	| 'addProviderName'
+	| 'addProviderConfig'
 	| 'removeProvider'
+
+// Collected agent form values during multi-step flow
+interface AgentFormValues {
+	name: string
+	description: string
+	systemPrompt: string
+	providerId: string
+	providerOverrides: Record<string, unknown>
+	toolIds: string[]
+}
+
+const emptyAgentValues = (): AgentFormValues => ({
+	name: '',
+	description: '',
+	systemPrompt: '',
+	providerId: '',
+	providerOverrides: {},
+	toolIds: [],
+})
 
 export function ConfigScreen({
 	agents,
@@ -49,6 +87,8 @@ export function ConfigScreen({
 	providers,
 	onUpsertProvider,
 	onDeleteProvider,
+	providerRegistry,
+	toolRegistry,
 	onBack,
 }: Props) {
 	const { agentList, providerList, setAgentList, setProviderList } =
@@ -57,9 +97,26 @@ export function ConfigScreen({
 			providers,
 		})
 	const [mode, setMode] = useState<Mode>('menu')
+	const [saveStatus, setSaveStatus] = useState<
+		'idle' | 'saving' | 'saved' | 'removed'
+	>('idle')
 
-	const agentForm = useMultiStepForm(AGENT_ADD_FIELDS)
-	const providerForm = useMultiStepForm(PROVIDER_ADD_FIELDS)
+	const providerForm = useMultiStepForm(['name'])
+
+	// State for schema-driven provider form
+	const [selectedProviderType, setSelectedProviderType] = useState('')
+	const [selectedProviderName, setSelectedProviderName] = useState('')
+
+	// State for multi-step agent form
+	const [agentValues, setAgentValues] = useState<AgentFormValues>(
+		emptyAgentValues(),
+	)
+	const [currentAgentInput, setCurrentAgentInput] = useState('')
+
+	const resetAgentForm = () => {
+		setAgentValues(emptyAgentValues())
+		setCurrentAgentInput('')
+	}
 
 	useInput((_input: string, key: { escape?: boolean }) => {
 		if (!key.escape) {
@@ -67,9 +124,12 @@ export function ConfigScreen({
 		}
 		if (mode === 'menu') {
 			onBack()
+		} else if (mode === 'addAgentTools') {
+			// Esc finishes tool selection and saves the agent
+			handleAgentToolsFinish()
 		} else {
 			setMode('menu')
-			agentForm.setSaveStatus('idle')
+			setSaveStatus('idle')
 			providerForm.setSaveStatus('idle')
 		}
 	})
@@ -83,7 +143,7 @@ export function ConfigScreen({
 	}
 
 	const showSaved = () => {
-		setTimeout(() => agentForm.setSaveStatus('idle'), 1500)
+		setTimeout(() => setSaveStatus('idle'), 1500)
 	}
 
 	const handleMenuSelect = (action: string) => {
@@ -92,45 +152,148 @@ export function ConfigScreen({
 			return
 		}
 		if (action === 'addAgent') {
-			agentForm.reset()
+			resetAgentForm()
+			setMode('addAgentName')
+			return
 		}
 		if (action === 'addProvider') {
 			providerForm.reset()
+			setSelectedProviderType('')
+			setSelectedProviderName('')
+			setMode('addProviderType')
+			return
 		}
 		setMode(action as Mode)
 	}
 
-	const handleAgentAddSubmit = async (value: string) => {
-		const result = agentForm.onSubmit(value)
-		if (result === 'next') {
-			return
-		}
+	const handleAgentNameSubmit = (value: string) => {
+		setAgentValues((prev) => ({ ...prev, name: value }))
+		setCurrentAgentInput('')
+		setMode('addAgentDescription')
+	}
 
-		agentForm.setSaveStatus('saving')
+	const handleAgentDescriptionSubmit = (value: string) => {
+		setAgentValues((prev) => ({ ...prev, description: value }))
+		setCurrentAgentInput('')
+		setMode('addAgentPrompt')
+	}
+
+	const handleAgentPromptSubmit = (value: string) => {
+		setAgentValues((prev) => ({ ...prev, systemPrompt: value }))
+		setCurrentAgentInput('')
+		setMode('addAgentProvider')
+	}
+
+	const handleAgentProviderSelect = (item: {
+		value: string
+		label: string
+	}) => {
+		setAgentValues((prev) => ({ ...prev, providerId: item.value }))
+		setMode('addAgentOverrides')
+	}
+
+	const handleAgentOverridesComplete = (overrides: Record<string, string>) => {
+		// Convert string values to appropriate types based on schema
+		const typedOverrides: Record<string, unknown> = {}
+		try {
+			const selectedProvider = providerList.find(
+				(p) => p.id === agentValues.providerId,
+			)
+			if (selectedProvider) {
+				const schema = providerRegistry.schema(selectedProvider.type)
+				for (const [key, val] of Object.entries(overrides)) {
+					const prop = schema.properties[key]
+					if (prop && isTypedProperty(prop) && prop.type === 'number') {
+						typedOverrides[key] = val === '' ? undefined : Number(val)
+					} else if (prop && isTypedProperty(prop) && prop.type === 'boolean') {
+						typedOverrides[key] = val === 'true'
+					} else {
+						typedOverrides[key] = val
+					}
+				}
+			} else {
+				for (const [key, val] of Object.entries(overrides)) {
+					typedOverrides[key] = val
+				}
+			}
+		} catch {
+			// Schema not available, use raw values
+			for (const [key, val] of Object.entries(overrides)) {
+				typedOverrides[key] = val
+			}
+		}
+		setAgentValues((prev) => ({ ...prev, providerOverrides: typedOverrides }))
+		setMode('addAgentTools')
+	}
+
+	const handleAgentToolsSelect = (item: { value: string; label: string }) => {
+		setAgentValues((prev) => {
+			const existing = prev.toolIds.includes(item.value)
+				? prev.toolIds.filter((id) => id !== item.value)
+				: [...prev.toolIds, item.value]
+			return { ...prev, toolIds: existing }
+		})
+	}
+
+	const handleAgentToolsFinish = async () => {
+		setSaveStatus('saving')
 		await onUpsertAgent({
-			name: agentForm.addValues.name ?? '',
-			...(agentForm.addValues.description !== undefined &&
-				agentForm.addValues.description !== '' && {
-					description: agentForm.addValues.description,
-				}),
+			name: agentValues.name,
+			...(agentValues.description !== '' && {
+				description: agentValues.description,
+			}),
+			systemPrompt: agentValues.systemPrompt,
+			providerId: agentValues.providerId,
+			providerOverrides: agentValues.providerOverrides,
+			toolIds: agentValues.toolIds,
 		})
 		const updated = await agents.list()
 		setAgentList(updated)
-		agentForm.setSaveStatus('saved')
+		setSaveStatus('saved')
 		setMode('menu')
 		showSaved()
 	}
 
-	const handleProviderAddSubmit = async (value: string) => {
-		const result = providerForm.onSubmit(value)
-		if (result === 'next') {
-			return
+	const handleProviderTypeSelect = (item: { value: string; label: string }) => {
+		setSelectedProviderType(item.value)
+		setMode('addProviderName')
+	}
+
+	const handleProviderNameSubmit = async (value: string) => {
+		setSelectedProviderName(value)
+		setMode('addProviderConfig')
+	}
+
+	const handleProviderConfigComplete = async (
+		configValues: Record<string, string>,
+	) => {
+		providerForm.setSaveStatus('saving')
+
+		// Convert string values to appropriate types based on schema
+		const config: Record<string, unknown> = {}
+		try {
+			const schema = providerRegistry.schema(selectedProviderType)
+			for (const [key, val] of Object.entries(configValues)) {
+				const prop = schema.properties[key]
+				if (prop && isTypedProperty(prop) && prop.type === 'number') {
+					config[key] = val === '' ? undefined : Number(val)
+				} else if (prop && isTypedProperty(prop) && prop.type === 'boolean') {
+					config[key] = val === 'true'
+				} else {
+					config[key] = val
+				}
+			}
+		} catch {
+			// Schema not available, use raw values
+			for (const [key, val] of Object.entries(configValues)) {
+				config[key] = val
+			}
 		}
 
-		providerForm.setSaveStatus('saving')
 		await onUpsertProvider({
-			name: providerForm.addValues.name ?? '',
-			type: providerForm.addValues.type ?? '',
+			name: selectedProviderName,
+			type: selectedProviderType,
+			config,
 		})
 		const updated = await providers.list()
 		setProviderList(updated)
@@ -143,11 +306,11 @@ export function ConfigScreen({
 		label: string
 		value: string
 	}) => {
-		agentForm.setSaveStatus('saving')
+		setSaveStatus('saving')
 		await onDeleteAgent(item.value)
 		const updated = await agents.list()
 		setAgentList(updated)
-		agentForm.setSaveStatus('removed')
+		setSaveStatus('removed')
 		setMode('menu')
 		showSaved()
 	}
@@ -165,6 +328,14 @@ export function ConfigScreen({
 		showSaved()
 	}
 
+	// Get the selected provider's type for overrides schema
+	const selectedAgentProviderType = (() => {
+		const prov = providerList.find((p) => p.id === agentValues.providerId)
+		return prov?.type ?? ''
+	})()
+
+	const availableTools = toolRegistry.list()
+
 	return (
 		<Box flexDirection="column" padding={1}>
 			<Text bold>Config</Text>
@@ -177,37 +348,163 @@ export function ConfigScreen({
 				<ConfigMenu
 					agentCount={agentList.length}
 					providerCount={providerList.length}
-					isFocused={agentForm.saveStatus === 'idle'}
+					isFocused={saveStatus === 'idle'}
 					onSelect={handleMenuSelect}
 				/>
 			)}
 
-			{mode === 'addAgent' && (
-				<AddAgentForm
-					fieldIndex={agentForm.addFieldIndex}
-					values={agentForm.addValues}
-					currentValue={agentForm.currentFieldValue}
-					onChange={(v) => agentForm.setCurrentFieldValue(v)}
-					onSubmit={handleAgentAddSubmit}
-					isFocused={agentForm.saveStatus === 'idle'}
+			{mode === 'addAgentName' && (
+				<Box flexDirection="column" marginTop={1}>
+					<Text bold>Add agent</Text>
+					<Box marginTop={1}>
+						<Text>Name:</Text>
+						<TextInput
+							value={currentAgentInput}
+							onChange={setCurrentAgentInput}
+							onSubmit={handleAgentNameSubmit}
+							focus={saveStatus === 'idle'}
+						/>
+					</Box>
+				</Box>
+			)}
+
+			{mode === 'addAgentDescription' && (
+				<Box flexDirection="column" marginTop={1}>
+					<Text bold>Add agent</Text>
+					<Box marginTop={1} flexDirection="column">
+						<Text dimColor>Name: {agentValues.name}</Text>
+						<Box>
+							<Text>Description (optional):</Text>
+							<TextInput
+								value={currentAgentInput}
+								onChange={setCurrentAgentInput}
+								onSubmit={handleAgentDescriptionSubmit}
+								focus={saveStatus === 'idle'}
+							/>
+						</Box>
+					</Box>
+				</Box>
+			)}
+
+			{mode === 'addAgentPrompt' && (
+				<Box flexDirection="column" marginTop={1}>
+					<Text bold>Add agent</Text>
+					<Box marginTop={1} flexDirection="column">
+						<Text dimColor>Name: {agentValues.name}</Text>
+						<Box>
+							<Text>System prompt:</Text>
+							<TextInput
+								value={currentAgentInput}
+								onChange={setCurrentAgentInput}
+								onSubmit={handleAgentPromptSubmit}
+								focus={saveStatus === 'idle'}
+							/>
+						</Box>
+					</Box>
+				</Box>
+			)}
+
+			{mode === 'addAgentProvider' && (
+				<Box flexDirection="column" marginTop={1}>
+					<Text bold>Select provider</Text>
+					<SelectInput
+						items={providerList.map((p) => ({
+							label: p.name,
+							value: p.id,
+						}))}
+						itemComponent={(item) => (
+							<Box>
+								<Text bold={item.isSelected ?? false}>{item.label}</Text>
+							</Box>
+						)}
+						onSelect={handleAgentProviderSelect}
+						isFocused={saveStatus === 'idle'}
+					/>
+				</Box>
+			)}
+
+			{mode === 'addAgentOverrides' && selectedAgentProviderType && (
+				<SchemaDrivenForm
+					title={`Provider overrides (${selectedAgentProviderType})`}
+					schema={providerRegistry.schema(selectedAgentProviderType)}
+					isFocused={saveStatus === 'idle'}
+					onComplete={handleAgentOverridesComplete}
+					onCancel={() => setMode('menu')}
 				/>
 			)}
 
-			{mode === 'addProvider' && (
-				<AddProviderForm
-					fieldIndex={providerForm.addFieldIndex}
-					values={providerForm.addValues}
-					currentValue={providerForm.currentFieldValue}
-					onChange={(v) => providerForm.setCurrentFieldValue(v)}
-					onSubmit={handleProviderAddSubmit}
+			{mode === 'addAgentTools' && (
+				<Box flexDirection="column" marginTop={1}>
+					<Text bold>Select tools (press Enter to toggle, Esc to finish)</Text>
+					<SelectInput
+						items={availableTools.map((t) => ({
+							label: `${t.id} ${t.description ? `— ${t.description}` : ''}`,
+							value: t.id,
+						}))}
+						itemComponent={(item) => (
+							<Box>
+								<Text bold={item.isSelected ?? false}>{item.label}</Text>
+							</Box>
+						)}
+						onSelect={handleAgentToolsSelect}
+						isFocused={saveStatus === 'idle'}
+					/>
+					<Box marginTop={1}>
+						<Text dimColor>
+							Selected: {agentValues.toolIds.join(', ') || 'none'}
+						</Text>
+					</Box>
+				</Box>
+			)}
+
+			{mode === 'addProviderType' && (
+				<Box flexDirection="column" marginTop={1}>
+					<Text bold>Select provider type</Text>
+					<SelectInput
+						items={AVAILABLE_PROVIDER_TYPES.map((t) => ({
+							label: t,
+							value: t,
+						}))}
+						itemComponent={(item) => (
+							<Box>
+								<Text bold={item.isSelected ?? false}>{item.label}</Text>
+							</Box>
+						)}
+						onSelect={handleProviderTypeSelect}
+						isFocused={providerForm.saveStatus === 'idle'}
+					/>
+				</Box>
+			)}
+
+			{mode === 'addProviderName' && (
+				<Box flexDirection="column" marginTop={1}>
+					<Text bold>Provider name</Text>
+					<Box>
+						<Text>Name:</Text>
+						<TextInput
+							value={providerForm.currentFieldValue}
+							onChange={(v) => providerForm.setCurrentFieldValue(v)}
+							onSubmit={handleProviderNameSubmit}
+							focus={providerForm.saveStatus === 'idle'}
+						/>
+					</Box>
+				</Box>
+			)}
+
+			{mode === 'addProviderConfig' && selectedProviderType && (
+				<SchemaDrivenForm
+					title={`Configure ${selectedProviderType}`}
+					schema={providerRegistry.schema(selectedProviderType)}
 					isFocused={providerForm.saveStatus === 'idle'}
+					onComplete={handleProviderConfigComplete}
+					onCancel={() => setMode('menu')}
 				/>
 			)}
 
 			{mode === 'removeAgent' && (
 				<RemoveAgentList
 					agents={agentList}
-					isFocused={agentForm.saveStatus === 'idle'}
+					isFocused={saveStatus === 'idle'}
 					onSelect={handleRemoveAgentSelect}
 				/>
 			)}
@@ -220,7 +517,7 @@ export function ConfigScreen({
 				/>
 			)}
 
-			<SaveStatus status={agentForm.saveStatus} />
+			<SaveStatus status={saveStatus} />
 			<Text dimColor>Esc to go back</Text>
 		</Box>
 	)

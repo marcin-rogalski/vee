@@ -7,7 +7,7 @@ describe('D1 — Agent type shape', () => {
 		name: 'Test Agent',
 		systemPrompt: 'You are helpful.',
 		providerId: 'provider-1',
-		providerConfiguration: { apiKey: 'key' },
+		providerOverrides: { apiKey: 'key' },
 		toolIds: ['readFile', 'writeFile'],
 	}
 
@@ -16,7 +16,7 @@ describe('D1 — Agent type shape', () => {
 		expect(validAgent.name).toBe('Test Agent')
 		expect(validAgent.systemPrompt).toBe('You are helpful.')
 		expect(validAgent.providerId).toBe('provider-1')
-		expect(validAgent.providerConfiguration).toEqual({ apiKey: 'key' })
+		expect(validAgent.providerOverrides).toEqual({ apiKey: 'key' })
 		expect(validAgent.toolIds).toEqual(['readFile', 'writeFile'])
 	})
 
@@ -40,7 +40,7 @@ describe('D1 — Agent type shape', () => {
 			'name',
 			'systemPrompt',
 			'providerId',
-			'providerConfiguration',
+			'providerOverrides',
 			'toolIds',
 		].sort()
 		expect(keys).toEqual(requiredKeys)
@@ -57,7 +57,7 @@ describe('D1 — Agent edge cases', () => {
 		name: 'Test Agent',
 		systemPrompt: 'You are helpful.',
 		providerId: 'provider-1',
-		providerConfiguration: { apiKey: 'key' },
+		providerOverrides: { apiKey: 'key' },
 		toolIds: ['readFile', 'writeFile'],
 	}
 
@@ -138,32 +138,26 @@ describe('D1 — Agent edge cases', () => {
 		expect(agentWithOversizedProviderId.providerId.length).toBe(10000)
 	})
 
-	it('accepts Agent with unexpected extra keys in providerConfiguration', () => {
+	it('accepts Agent with unexpected extra keys in providerOverrides', () => {
 		const agentWithExtraKeys: Agent = {
 			...baseAgent,
-			providerConfiguration: {
+			providerOverrides: {
 				apiKey: 'key',
 				region: 'us-east-1',
 				timeout: 30000,
 				retries: 3,
 			},
 		}
-		expect(agentWithExtraKeys.providerConfiguration).toHaveProperty(
-			'apiKey',
-			'key',
-		)
-		expect(agentWithExtraKeys.providerConfiguration).toHaveProperty(
+		expect(agentWithExtraKeys.providerOverrides).toHaveProperty('apiKey', 'key')
+		expect(agentWithExtraKeys.providerOverrides).toHaveProperty(
 			'region',
 			'us-east-1',
 		)
-		expect(agentWithExtraKeys.providerConfiguration).toHaveProperty(
+		expect(agentWithExtraKeys.providerOverrides).toHaveProperty(
 			'timeout',
 			30000,
 		)
-		expect(agentWithExtraKeys.providerConfiguration).toHaveProperty(
-			'retries',
-			3,
-		)
+		expect(agentWithExtraKeys.providerOverrides).toHaveProperty('retries', 3)
 	})
 
 	it('accepts Agent without description key (explicitly omitted)', () => {
@@ -196,14 +190,14 @@ describe('D1 — Agent edge cases', () => {
 			name: 'y',
 			systemPrompt: 'z',
 			providerId: 'p',
-			providerConfiguration: {},
+			providerOverrides: {},
 			toolIds: [],
 		}
 		expect(minimalAgent.id).toBe('x')
 		expect(minimalAgent.name).toBe('y')
 		expect(minimalAgent.systemPrompt).toBe('z')
 		expect(minimalAgent.providerId).toBe('p')
-		expect(minimalAgent.providerConfiguration).toEqual({})
+		expect(minimalAgent.providerOverrides).toEqual({})
 		expect(minimalAgent.toolIds).toEqual([])
 	})
 })

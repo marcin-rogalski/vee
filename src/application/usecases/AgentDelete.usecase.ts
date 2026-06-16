@@ -9,7 +9,7 @@ class AgentDeleteUseCase {
 
 	async execute(id: string): Promise<void> {
 		await this.agentRepository.delete(id)
-		await this.eventBus.publish({
+		this.eventBus.publish({
 			id: crypto.randomUUID(),
 			ts: Date.now(),
 			role: 'system',

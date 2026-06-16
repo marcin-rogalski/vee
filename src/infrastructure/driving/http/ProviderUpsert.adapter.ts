@@ -1,6 +1,23 @@
 import type ProviderUpsertUseCase from '@application/usecases/ProviderUpsert.usecase'
+import type { JsonSchemaObject as JsonSchemaObjectType } from '@domain/JsonSchema'
 import ExpressEndpoint from '@infrastructure/utilities/ExpressEndpoint.adapter'
 import z from 'zod'
+
+const JsonSchemaProperty = z.object({
+	type: z.enum(['string', 'number', 'boolean']),
+	description: z.string().optional(),
+	enum: z.array(z.string()).optional(),
+})
+
+const JsonSchemaObject = z
+	.object({
+		$schema: z.string(),
+		type: z.literal('object'),
+		properties: z.record(z.string(), JsonSchemaProperty).default({}),
+		required: z.array(z.string()).optional().default([]),
+		description: z.string().optional(),
+	})
+	.transform((obj) => obj as JsonSchemaObjectType)
 
 const ProviderUpsert = (useCase: ProviderUpsertUseCase) =>
 	ExpressEndpoint.createEndpoint(
@@ -11,15 +28,8 @@ const ProviderUpsert = (useCase: ProviderUpsertUseCase) =>
 				id: z.string(),
 				name: z.string(),
 				type: z.string(),
-				configSchema: z.array(
-					z.object({
-						key: z.string(),
-						required: z.boolean(),
-						type: z.literal(['string', 'number', 'boolean']),
-						options: z.array(z.union([z.string(), z.number()])).optional(),
-						description: z.string(),
-					}),
-				),
+				configSchema: JsonSchemaObject,
+				config: z.record(z.string(), z.unknown()).optional(),
 			}),
 		},
 		async (_paras, body) => {
@@ -27,13 +37,8 @@ const ProviderUpsert = (useCase: ProviderUpsertUseCase) =>
 				id: body.id,
 				name: body.name,
 				type: body.type,
-				configSchema: body.configSchema.map((item) => ({
-					key: item.key,
-					required: item.required,
-					type: item.type,
-					options: item.options,
-					description: item.description,
-				})),
+				configSchema: body.configSchema,
+				config: body.config ?? {},
 			})
 		},
 	)

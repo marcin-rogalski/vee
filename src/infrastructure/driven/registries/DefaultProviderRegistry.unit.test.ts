@@ -1,4 +1,5 @@
 import type ProviderPort from '@application/ports/Provider.port'
+import type { JsonSchemaObject } from '@domain/JsonSchema'
 import type Provider from '@domain/Provider'
 import { beforeEach, describe, expect, it } from 'vitest'
 import DefaultProviderRegistry from './DefaultProviderRegistry'
@@ -24,7 +25,12 @@ describe('R1 — DefaultProviderRegistry', () => {
 			id: 'p1',
 			name: 'Test Provider',
 			type: 'openai',
-			configSchema: [],
+			configSchema: {
+				$schema: 'https://json-schema.org/draft/2020-12/schema',
+				type: 'object',
+				properties: {},
+			},
+			config: {},
 		}
 		const result = registry.resolve(provider)
 		expect(result).toBe(mockProvider)
@@ -44,7 +50,12 @@ describe('R1 — DefaultProviderRegistry', () => {
 			id: 'p1',
 			name: 'Test Provider',
 			type: 'anthropic',
-			configSchema: [],
+			configSchema: {
+				$schema: 'https://json-schema.org/draft/2020-12/schema',
+				type: 'object',
+				properties: {},
+			},
+			config: {},
 		}
 		const result = registry.resolve(provider)
 		expect(result).toBe(mockProvider)
@@ -63,13 +74,23 @@ describe('R1 — DefaultProviderRegistry', () => {
 			id: 'p1',
 			name: 'Provider A',
 			type: 'openai',
-			configSchema: [],
+			configSchema: {
+				$schema: 'https://json-schema.org/draft/2020-12/schema',
+				type: 'object',
+				properties: {},
+			},
+			config: {},
 		}
 		const providerB: Provider = {
 			id: 'p2',
 			name: 'Provider B',
 			type: 'openai',
-			configSchema: [],
+			configSchema: {
+				$schema: 'https://json-schema.org/draft/2020-12/schema',
+				type: 'object',
+				properties: {},
+			},
+			config: {},
 		}
 		const a = registry.resolve(providerA)
 		const b = registry.resolve(providerB)
@@ -81,10 +102,51 @@ describe('R1 — DefaultProviderRegistry', () => {
 			id: 'p1',
 			name: 'Unknown Provider',
 			type: 'unknown',
-			configSchema: [],
+			configSchema: {
+				$schema: 'https://json-schema.org/draft/2020-12/schema',
+				type: 'object',
+				properties: {},
+			},
+			config: {},
 		}
 		expect(() => registry.resolve(provider)).toThrow(
 			'Provider type with id unknown not found',
+		)
+	})
+
+	it('returns schema for registered provider type', () => {
+		const mockProvider: ProviderPort = {
+			id: 'test',
+			type: 'openai',
+			countTokens: () => 0,
+			compact: async () => [],
+			shouldCompact: () => false,
+			infer: async function* () {},
+		}
+		const schema: JsonSchemaObject = {
+			$schema: 'https://json-schema.org/draft/2020-12/schema',
+			type: 'object',
+			properties: {
+				apiKey: { type: 'string', description: 'API key' },
+			},
+			required: ['apiKey'],
+		}
+		registry.register('openai', () => mockProvider, schema)
+		expect(registry.schema('openai')).toBe(schema)
+	})
+
+	it('throws when schema is not registered', () => {
+		const mockProvider: ProviderPort = {
+			id: 'test',
+			type: 'openai',
+			countTokens: () => 0,
+			compact: async () => [],
+			shouldCompact: () => false,
+			infer: async function* () {},
+		}
+		registry.register('openai', () => mockProvider)
+		expect(() => registry.schema('openai')).toThrow(
+			'Provider schema with id openai not found',
 		)
 	})
 })

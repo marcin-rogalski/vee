@@ -18,10 +18,11 @@ describe('UC1 — AgentDelete use case', () => {
 				name: 'Test',
 				systemPrompt: '',
 				providerId: 'p1',
-				providerConfiguration: {},
+				providerOverrides: {},
 				toolIds: [],
 			}),
 			list: async () => [],
+			listByProviderId: async () => [],
 			save: async () => {},
 			delete: async () => {},
 		}
@@ -81,14 +82,10 @@ describe('UC1 — AgentDelete use case', () => {
 		expect(envelope.role).toBe('system')
 	})
 
-	it('propagates errors from eventBus.publish', async () => {
-		vi.spyOn(mockRepository, 'delete').mockResolvedValue(undefined)
-		vi.spyOn(mockEventBus, 'publish').mockRejectedValue(
-			new Error('Event bus unavailable'),
-		)
-		await expect(useCase.execute('agent-789')).rejects.toThrow(
-			'Event bus unavailable',
-		)
+	it('does not await eventBus.publish', async () => {
+		const publishSpy = vi.spyOn(mockEventBus, 'publish')
+		publishSpy.mockReturnValue(undefined)
+		await expect(useCase.execute('agent-456')).resolves.toBeUndefined()
 	})
 
 	it('passes empty string id through to repository (no validation in use case)', async () => {

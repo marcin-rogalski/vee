@@ -15,18 +15,55 @@ export function createAgentsUpsertCommand(
 		.requiredOption('--name <name>', 'Agent name')
 		.option('--description <description>', 'Agent description')
 		.option('--id <id>', 'Agent ID (for update)')
-		.action(async ({ name, description, id }) => {
-			await deps.agentUpsertUseCase.execute({
-				id: id ?? '',
+		.requiredOption('--provider-id <id>', 'Provider ID')
+		.requiredOption('--prompt <text>', 'System prompt')
+		.option(
+			'--override <key=value>',
+			'Provider config override (repeatable)',
+			collectRepeatable,
+			[],
+		)
+		.option('--tool-id <toolId>', 'Tool ID (repeatable)', collectRepeatable, [])
+		.action(
+			async ({
 				name,
-				systemPrompt: '',
-				providerId: '',
-				providerConfiguration: {},
-				toolIds: [],
-				...(description !== undefined && { description }),
-			})
-			deps.logger.info('Agent saved', { id: id || 'new' })
-		})
+				description,
+				id,
+				providerId,
+				prompt,
+				override,
+				toolId,
+			}) => {
+				const providerOverrides: Record<string, unknown> = {}
+				for (const kv of override) {
+					const eqIndex = kv.indexOf('=')
+					if (eqIndex === -1) {
+						deps.logger.error(
+							`Invalid override format: ${kv} (expected key=value)`,
+						)
+						process.exit(1)
+					}
+					providerOverrides[kv.slice(0, eqIndex)] = kv.slice(eqIndex + 1)
+				}
+
+				const agent: Agent = {
+					id: id ?? '',
+					name,
+					description: description ?? undefined,
+					systemPrompt: prompt,
+					providerId,
+					providerOverrides,
+					toolIds: toolId,
+				}
+
+				await deps.agentUpsertUseCase.execute(agent)
+				deps.logger.info('Agent saved', { id: id || 'new' })
+			},
+		)
 
 	return command
+}
+
+function collectRepeatable(current: string, previous: string[]): string[] {
+	return previous.concat([current])
 }

@@ -74,6 +74,7 @@ providers.addCommand(
 providers.addCommand(
 	createProvidersUpsertCommand({
 		providerUpsertUseCase: compositionRoot.providerUpsert,
+		providerRegistry: compositionRoot.providerRegistry,
 		logger: compositionRoot.logger,
 	}),
 )

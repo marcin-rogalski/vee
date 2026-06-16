@@ -62,11 +62,14 @@ class InferUseCase {
 			let pendingTokens: string[] = []
 			let pendingToolCalls: Array<Promise<PendingToolCall>> = []
 
-			for await (const event of provider.infer(
-				agent.providerConfiguration,
-				context,
-				tools,
-			)) {
+			// Merge provider base config with agent-level overrides.
+			// Agent overrides take precedence on conflict.
+			const mergedConfig = {
+				...providerEntity.config,
+				...agent.providerOverrides,
+			}
+
+			for await (const event of provider.infer(mergedConfig, context, tools)) {
 				switch (event.type) {
 					case 'thought': {
 						this.eventBus.publish({

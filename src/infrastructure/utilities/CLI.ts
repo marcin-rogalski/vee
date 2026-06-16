@@ -71,17 +71,16 @@ export default class CLI {
 				props: (navigate) => ({
 					agents: { list: core.agentList.execute.bind(core.agentList) },
 					onUpsertAgent: (agent: {
-						id?: string
 						name: string
 						description?: string
+						systemPrompt: string
+						providerId: string
+						providerOverrides: Record<string, unknown>
+						toolIds: string[]
 					}) =>
 						core.agentUpsert.execute({
 							...agent,
-							id: agent.id ?? '',
-							systemPrompt: '',
-							providerId: '',
-							providerConfiguration: {},
-							toolIds: [],
+							id: '',
 						} as Agent),
 					onDeleteAgent: core.agentDelete.execute,
 					providers: {
@@ -91,16 +90,20 @@ export default class CLI {
 						id?: string
 						name: string
 						type: string
-					}) =>
+						config: Record<string, unknown>
+					}) => {
+						const schema = core.providerRegistry.schema(provider.type)
 						core.providerUpsert.execute({
 							id: provider.id ?? '',
 							name: provider.name,
 							type: provider.type,
-							configSchema: [],
-						} as Provider),
+							configSchema: schema,
+							config: provider.config,
+						} as Provider)
+					},
 					onDeleteProvider: core.providerDelete.execute,
-					sessions: { list: core.sessionList.execute.bind(core.sessionList) },
-					onCreateSession: core.sessionCreate.execute,
+					providerRegistry: core.providerRegistry,
+					toolRegistry: core.toolRegistry,
 					onBack: () => navigate('menu'),
 				}),
 			},

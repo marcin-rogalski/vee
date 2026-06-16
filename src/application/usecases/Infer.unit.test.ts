@@ -17,7 +17,7 @@ const mockAgent: Agent = {
 	name: 'Test Agent',
 	systemPrompt: 'You are a test agent.',
 	providerId: 'provider-1',
-	providerConfiguration: { model: 'test-model' },
+	providerOverrides: { model: 'test-model' },
 	toolIds: ['read-file'],
 }
 
@@ -25,7 +25,12 @@ const mockProviderEntity: Provider = {
 	id: 'provider-1',
 	name: 'Test Provider',
 	type: 'openai',
-	configSchema: [],
+	configSchema: {
+		$schema: 'http://json-schema.org/draft-07/schema#',
+		type: 'object',
+		properties: {},
+	},
+	config: {},
 }
 
 let mockAgentRepository: AgentRepositoryPort
@@ -228,10 +233,44 @@ describe('InferUseCase', () => {
 		).rejects.toThrow('Provider not found')
 	})
 
-	it('iterates over provider.infer() async generator correctly', async () => {
+	it('merges provider config with agent overrides when calling infer', async () => {
 		await useCase.execute('Hello', 'agent-1', 'session-1')
+		// provider.config = {}, agent.providerOverrides = { model: 'test-model' }
+		const expectedConfig = {
+			...mockProviderEntity.config,
+			...mockAgent.providerOverrides,
+		}
 		expect(mockProvider.infer).toHaveBeenCalledWith(
-			mockAgent.providerConfiguration,
+			expectedConfig,
+			expect.any(Array),
+			expect.any(Array),
+		)
+	})
+
+	it('agent overrides take precedence over provider base config', async () => {
+		// Set up provider with base config
+		const providerWithConfig: Provider = {
+			...mockProviderEntity,
+			config: { apiKey: 'shared-key', model: 'gpt-4o', temperature: 0.5 },
+		}
+		;(mockProviderRepository.get as any).mockResolvedValue(providerWithConfig)
+
+		// Agent overrides model but not apiKey
+		const agentWithOverrides: Agent = {
+			...mockAgent,
+			providerOverrides: { model: 'gpt-4o-mini' },
+		}
+		;(mockAgentRepository.get as any).mockResolvedValue(agentWithOverrides)
+
+		await useCase.execute('Hello', 'agent-1', 'session-1')
+
+		const expectedMerged = {
+			apiKey: 'shared-key',
+			model: 'gpt-4o-mini', // override wins
+			temperature: 0.5,
+		}
+		expect(mockProvider.infer).toHaveBeenCalledWith(
+			expectedMerged,
 			expect.any(Array),
 			expect.any(Array),
 		)

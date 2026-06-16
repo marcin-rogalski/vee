@@ -13,5 +13,8 @@
 - After every code change, run `tsc --noEmit` and `biome check --fix --unsafe` to verify typecheck and lint pass. Do not commit or declare work done until both commands succeed.
 
 ## Artifacts
-- All project artifacts (plans, architecture docs, ADRs, entities, concepts) go in `.artifacts/` at the project root.
-- Never use `.claude/` or `.opencode/artifacts/` for project artifacts.
+- Plans: `memory/plans/` (managed via memory skill)
+- ADRs: `docs/adr/` (numbered, never deleted — historical record)
+- Ideas: `memory/ideas/` (managed via memory skill)
+- Issues: `issues.md` (workspace root)
+- Never use `.artifacts/`, `.claude/`, or `.opencode/artifacts/` for project artifacts.

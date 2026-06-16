@@ -1,6 +1,6 @@
 import type EventBusPort from '@application/ports/EventBus.port'
 import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
-import type ConfigurationSchema from '@domain/ConfigurationSchema'
+import type { JsonSchemaObject } from '@domain/JsonSchema'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ProviderUpsertUseCase from './ProviderUpsert.usecase'
 
@@ -15,7 +15,12 @@ describe('UC8 — ProviderUpsert use case', () => {
 				id: 'p1',
 				name: 'OpenAI',
 				type: 'openai',
-				configSchema: [],
+				configSchema: {
+					$schema: 'http://json-schema.org/draft-07/schema#',
+					type: 'object',
+					properties: {},
+				},
+				config: {},
 			}),
 			list: async () => [],
 			save: async () => {},
@@ -38,43 +43,145 @@ describe('UC8 — ProviderUpsert use case', () => {
 		useCase = new ProviderUpsertUseCase(mockRepository, mockEventBus)
 	})
 
-	it('calls providerRepository.save(provider) with full provider object', async () => {
-		const saveSpy = vi.spyOn(mockRepository, 'save')
-		const configSchema: ConfigurationSchema[] = [
-			{
-				key: 'apiKey',
-				required: true,
-				type: 'string' as const,
-				options: undefined,
-				description: 'Key',
+	it('validates config against configSchema before saving', async () => {
+		const configSchema: JsonSchemaObject = {
+			$schema: 'http://json-schema.org/draft-07/schema#',
+			type: 'object',
+			properties: {
+				apiKey: {
+					type: 'string',
+					description: 'Key',
+				},
 			},
-		]
+		}
 		const provider = {
 			id: 'p1',
 			name: 'OpenAI',
 			type: 'openai',
 			configSchema,
+			config: { apiKey: 'sk-test' },
+		}
+		const saveSpy = vi.spyOn(mockRepository, 'save')
+		await useCase.execute(provider)
+		expect(saveSpy).toHaveBeenCalledWith(provider)
+	})
+
+	it('calls providerRepository.save(provider) with full provider object', async () => {
+		const saveSpy = vi.spyOn(mockRepository, 'save')
+		const configSchema: JsonSchemaObject = {
+			$schema: 'http://json-schema.org/draft-07/schema#',
+			type: 'object',
+			properties: {
+				apiKey: {
+					type: 'string',
+					description: 'Key',
+				},
+			},
+		}
+		const provider = {
+			id: 'p1',
+			name: 'OpenAI',
+			type: 'openai',
+			configSchema,
+			config: {},
 		}
 		await useCase.execute(provider)
 		expect(saveSpy).toHaveBeenCalledWith(provider)
 	})
 
-	it('publishes a provider-saved event', async () => {
-		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-		const configSchema: ConfigurationSchema[] = [
-			{
-				key: 'apiKey',
-				required: true,
-				type: 'string' as const,
-				options: undefined,
-				description: 'Key',
+	it('throws ValidationError when config is missing required field', async () => {
+		const configSchema: JsonSchemaObject = {
+			$schema: 'http://json-schema.org/draft-07/schema#',
+			type: 'object',
+			properties: {
+				apiKey: {
+					type: 'string',
+					description: 'Key',
+				},
 			},
-		]
+			required: ['apiKey'],
+		}
 		const provider = {
 			id: 'p1',
 			name: 'OpenAI',
 			type: 'openai',
 			configSchema,
+			config: {},
+		}
+		await expect(useCase.execute(provider)).rejects.toThrow('Validation failed')
+	})
+
+	it('throws ValidationError with provider name context on config failure', async () => {
+		const configSchema: JsonSchemaObject = {
+			$schema: 'http://json-schema.org/draft-07/schema#',
+			type: 'object',
+			properties: {
+				apiKey: {
+					type: 'string',
+					description: 'Key',
+				},
+			},
+			required: ['apiKey'],
+		}
+		const provider = {
+			id: 'p1',
+			name: 'My Provider',
+			type: 'openai',
+			configSchema,
+			config: {},
+		}
+		try {
+			await useCase.execute(provider)
+			expect.fail('should have thrown')
+		} catch (error) {
+			expect(
+				(error as import('@domain/errors').ValidationError).metadata.details,
+			).toHaveProperty(
+				'_config',
+				'Provider config for "My Provider" is invalid',
+			)
+		}
+	})
+
+	it('throws ValidationError when config field has wrong type', async () => {
+		const configSchema: JsonSchemaObject = {
+			$schema: 'http://json-schema.org/draft-07/schema#',
+			type: 'object',
+			properties: {
+				temperature: {
+					type: 'number',
+					description: 'Temp',
+				},
+			},
+		}
+		const provider = {
+			id: 'p1',
+			name: 'OpenAI',
+			type: 'openai',
+			configSchema,
+			config: { temperature: 'not-a-number' },
+		}
+		await expect(useCase.execute(provider)).rejects.toThrow('Validation failed')
+	})
+
+	it('publishes a provider-saved event', async () => {
+		const publishSpy = vi.spyOn(mockEventBus, 'publish')
+		const configSchema: JsonSchemaObject = {
+			$schema: 'http://json-schema.org/draft-07/schema#',
+			type: 'object',
+			properties: {
+				apiKey: {
+					type: 'string',
+					description: 'Key',
+				},
+			},
+		}
+		const provider = {
+			id: 'p1',
+			name: 'OpenAI',
+			type: 'openai',
+			configSchema,
+			config: {},
 		}
 		await useCase.execute(provider)
 		expect(publishSpy).toHaveBeenCalledWith(
@@ -91,20 +198,22 @@ describe('UC8 — ProviderUpsert use case', () => {
 
 	it('publishes event envelope with correct type contract (single argument)', async () => {
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-		const configSchema: ConfigurationSchema[] = [
-			{
-				key: 'apiKey',
-				required: true,
-				type: 'string' as const,
-				options: undefined,
-				description: 'Key',
+		const configSchema: JsonSchemaObject = {
+			$schema: 'http://json-schema.org/draft-07/schema#',
+			type: 'object',
+			properties: {
+				apiKey: {
+					type: 'string',
+					description: 'Key',
+				},
 			},
-		]
+		}
 		const provider = {
 			id: 'p2',
 			name: 'Anthropic',
 			type: 'anthropic',
 			configSchema,
+			config: {},
 		}
 		await useCase.execute(provider)
 		const envelope = (
@@ -129,24 +238,30 @@ describe('UC8 — ProviderUpsert use case', () => {
 		expect(envelope.role).toBe('system')
 	})
 
-	it('propagates errors from eventBus.publish', async () => {
+	it('publishes event even if publish returns rejected promise (fire and forget)', async () => {
 		vi.spyOn(mockRepository, 'save').mockResolvedValue(undefined)
 		vi.spyOn(mockEventBus, 'publish').mockRejectedValue(
 			new Error('Event bus unavailable'),
 		)
-		const configSchema: ConfigurationSchema[] = [
-			{
-				key: 'apiKey',
-				required: true,
-				type: 'string' as const,
-				options: undefined,
-				description: 'Key',
+		const configSchema: JsonSchemaObject = {
+			$schema: 'http://json-schema.org/draft-07/schema#',
+			type: 'object',
+			properties: {
+				apiKey: {
+					type: 'string',
+					description: 'Key',
+				},
 			},
-		]
-		const provider = { id: 'p3', name: 'Test', type: 'test', configSchema }
-		await expect(useCase.execute(provider)).rejects.toThrow(
-			'Event bus unavailable',
-		)
+		}
+		const provider = {
+			id: 'p3',
+			name: 'Test',
+			type: 'test',
+			configSchema,
+			config: {},
+		}
+		// Fire-and-forget: publish error should not propagate
+		await expect(useCase.execute(provider)).resolves.toBeUndefined()
 	})
 
 	// --- Error paths ---
@@ -155,20 +270,22 @@ describe('UC8 — ProviderUpsert use case', () => {
 		vi.spyOn(mockRepository, 'save').mockRejectedValue(
 			new Error('Database error'),
 		)
-		const configSchema: ConfigurationSchema[] = [
-			{
-				key: 'apiKey',
-				required: true,
-				type: 'string' as const,
-				options: undefined,
-				description: 'Key',
+		const configSchema: JsonSchemaObject = {
+			$schema: 'http://json-schema.org/draft-07/schema#',
+			type: 'object',
+			properties: {
+				apiKey: {
+					type: 'string',
+					description: 'Key',
+				},
 			},
-		]
+		}
 		const provider = {
 			id: 'p4',
 			name: 'ErrorProvider',
 			type: 'test',
 			configSchema,
+			config: {},
 		}
 		await expect(useCase.execute(provider)).rejects.toThrow('Database error')
 	})
@@ -178,19 +295,21 @@ describe('UC8 — ProviderUpsert use case', () => {
 	it('handles provider with missing name field (partial provider object)', async () => {
 		const saveSpy = vi.spyOn(mockRepository, 'save')
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-		const configSchema: ConfigurationSchema[] = [
-			{
-				key: 'apiKey',
-				required: true,
-				type: 'string' as const,
-				options: undefined,
-				description: 'Key',
+		const configSchema: JsonSchemaObject = {
+			$schema: 'http://json-schema.org/draft-07/schema#',
+			type: 'object',
+			properties: {
+				apiKey: {
+					type: 'string',
+					description: 'Key',
+				},
 			},
-		]
+		}
 		const provider = {
 			id: 'p5',
 			type: 'test',
 			configSchema,
+			config: {},
 		} as unknown as import('@domain/Provider').default
 		await useCase.execute(provider)
 		expect(saveSpy).toHaveBeenCalledWith(provider)
@@ -224,16 +343,23 @@ describe('UC8 — ProviderUpsert use case', () => {
 
 	it('publishes event with id as non-empty string (crypto.randomUUID() behavior)', async () => {
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-		const configSchema: ConfigurationSchema[] = [
-			{
-				key: 'apiKey',
-				required: true,
-				type: 'string' as const,
-				options: undefined,
-				description: 'Key',
+		const configSchema: JsonSchemaObject = {
+			$schema: 'http://json-schema.org/draft-07/schema#',
+			type: 'object',
+			properties: {
+				apiKey: {
+					type: 'string',
+					description: 'Key',
+				},
 			},
-		]
-		const provider = { id: 'p7', name: 'UUID Test', type: 'test', configSchema }
+		}
+		const provider = {
+			id: 'p7',
+			name: 'UUID Test',
+			type: 'test',
+			configSchema,
+			config: {},
+		}
 		await useCase.execute(provider)
 		const envelope = (publishSpy.mock.calls[0] as [{ id: string }])[0]
 		expect(typeof envelope.id).toBe('string')
@@ -243,20 +369,22 @@ describe('UC8 — ProviderUpsert use case', () => {
 	it('publishes event with ts as integer <= Date.now()', async () => {
 		const before = Date.now()
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-		const configSchema: ConfigurationSchema[] = [
-			{
-				key: 'apiKey',
-				required: true,
-				type: 'string' as const,
-				options: undefined,
-				description: 'Key',
+		const configSchema: JsonSchemaObject = {
+			$schema: 'http://json-schema.org/draft-07/schema#',
+			type: 'object',
+			properties: {
+				apiKey: {
+					type: 'string',
+					description: 'Key',
+				},
 			},
-		]
+		}
 		const provider = {
 			id: 'p8',
 			name: 'Timestamp Test',
 			type: 'test',
 			configSchema,
+			config: {},
 		}
 		await useCase.execute(provider)
 		const after = Date.now()
@@ -270,20 +398,22 @@ describe('UC8 — ProviderUpsert use case', () => {
 
 	it('calls save() with provider containing existing id (update scenario)', async () => {
 		const saveSpy = vi.spyOn(mockRepository, 'save')
-		const configSchema: ConfigurationSchema[] = [
-			{
-				key: 'apiKey',
-				required: true,
-				type: 'string' as const,
-				options: undefined,
-				description: 'Key',
+		const configSchema: JsonSchemaObject = {
+			$schema: 'http://json-schema.org/draft-07/schema#',
+			type: 'object',
+			properties: {
+				apiKey: {
+					type: 'string',
+					description: 'Key',
+				},
 			},
-		]
+		}
 		const existingProvider = {
 			id: 'existing-123',
 			name: 'Updated Provider',
 			type: 'openai',
 			configSchema,
+			config: {},
 		}
 		await useCase.execute(existingProvider)
 		expect(saveSpy).toHaveBeenCalledWith(existingProvider)
@@ -292,20 +422,22 @@ describe('UC8 — ProviderUpsert use case', () => {
 
 	it('calls save() with provider without id (create scenario)', async () => {
 		const saveSpy = vi.spyOn(mockRepository, 'save')
-		const configSchema: ConfigurationSchema[] = [
-			{
-				key: 'apiKey',
-				required: true,
-				type: 'string' as const,
-				options: undefined,
-				description: 'Key',
+		const configSchema: JsonSchemaObject = {
+			$schema: 'http://json-schema.org/draft-07/schema#',
+			type: 'object',
+			properties: {
+				apiKey: {
+					type: 'string',
+					description: 'Key',
+				},
 			},
-		]
+		}
 		const newProvider = {
 			id: 'new-456',
 			name: 'New Provider',
 			type: 'anthropic',
 			configSchema,
+			config: {},
 		}
 		await useCase.execute(newProvider)
 		expect(saveSpy).toHaveBeenCalledWith(newProvider)
@@ -314,20 +446,22 @@ describe('UC8 — ProviderUpsert use case', () => {
 
 	it('publishes event with providerId and name from the provider object', async () => {
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-		const configSchema: ConfigurationSchema[] = [
-			{
-				key: 'apiKey',
-				required: true,
-				type: 'string' as const,
-				options: undefined,
-				description: 'Key',
+		const configSchema: JsonSchemaObject = {
+			$schema: 'http://json-schema.org/draft-07/schema#',
+			type: 'object',
+			properties: {
+				apiKey: {
+					type: 'string',
+					description: 'Key',
+				},
 			},
-		]
+		}
 		const provider = {
 			id: 'p9',
 			name: 'Edge Case Provider',
 			type: 'custom',
 			configSchema,
+			config: {},
 		}
 		await useCase.execute(provider)
 		const envelope = (

@@ -1,3 +1,4 @@
+import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
 import type EventBusPort from '@application/ports/EventBus.port'
 import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -5,6 +6,7 @@ import ProviderDeleteUseCase from './ProviderDelete.usecase'
 
 describe('UC9 — ProviderDelete use case', () => {
 	let mockRepository: ProviderRepositoryPort
+	let mockAgentRepository: AgentRepositoryPort
 	let mockEventBus: EventBusPort
 	let useCase: ProviderDeleteUseCase
 
@@ -14,7 +16,26 @@ describe('UC9 — ProviderDelete use case', () => {
 				id: 'p1',
 				name: 'OpenAI',
 				type: 'openai',
-				configSchema: [],
+				configSchema: {
+					$schema: 'http://json-schema.org/draft-07/schema#',
+					type: 'object',
+					properties: {},
+				},
+				config: {},
+			}),
+			list: async () => [],
+			save: async () => {},
+			delete: async () => {},
+		}
+		mockAgentRepository = {
+			listByProviderId: vi.fn().mockResolvedValue([]),
+			get: async () => ({
+				id: 'a1',
+				name: 'Agent',
+				systemPrompt: '',
+				providerId: 'p1',
+				providerOverrides: {},
+				toolIds: [],
 			}),
 			list: async () => [],
 			save: async () => {},
@@ -34,7 +55,11 @@ describe('UC9 — ProviderDelete use case', () => {
 				unsubscribe: () => void
 			}),
 		}
-		useCase = new ProviderDeleteUseCase(mockRepository, mockEventBus)
+		useCase = new ProviderDeleteUseCase(
+			mockRepository,
+			mockAgentRepository,
+			mockEventBus,
+		)
 	})
 
 	it('calls providerRepository.delete(id) with correct id', async () => {
@@ -80,12 +105,12 @@ describe('UC9 — ProviderDelete use case', () => {
 		expect(envelope.role).toBe('system')
 	})
 
-	it('propagates errors from eventBus.publish', async () => {
-		vi.spyOn(mockRepository, 'delete').mockResolvedValue(undefined)
+	it('publishes event even if publish returns a rejected promise (fire and forget)', async () => {
 		vi.spyOn(mockEventBus, 'publish').mockRejectedValue(
 			new Error('Event bus unavailable'),
 		)
-		await expect(useCase.execute('p3')).rejects.toThrow('Event bus unavailable')
+		// Fire-and-forget: publish error should not propagate
+		await expect(useCase.execute('p3')).resolves.toBeUndefined()
 	})
 
 	it('forwards empty string ID to repository.delete and eventBus.publish without validation', async () => {
@@ -155,5 +180,36 @@ describe('UC9 — ProviderDelete use case', () => {
 		expect((envelope.id as string).length).toBeGreaterThan(0)
 		// role must be 'system'
 		expect(envelope.role).toBe('system')
+	})
+
+	it('throws when provider is referenced by agents (cascade safety)', async () => {
+		const deleteSpy = vi.spyOn(mockRepository, 'delete')
+		vi.mocked(mockAgentRepository.listByProviderId).mockResolvedValueOnce([
+			{ id: 'a1', name: 'Agent One' },
+			{ id: 'a2', name: 'Agent Two' },
+		])
+		await expect(useCase.execute('p1')).rejects.toThrow(
+			'referenced by agent(s)',
+		)
+		expect(deleteSpy).not.toHaveBeenCalled()
+	})
+
+	it('includes agent names in cascade safety error message', async () => {
+		vi.mocked(mockAgentRepository.listByProviderId).mockResolvedValueOnce([
+			{ id: 'a1', name: 'MyAgent' },
+		])
+		try {
+			await useCase.execute('p1')
+			expect.fail('should have thrown')
+		} catch (error) {
+			expect((error as Error).message).toContain('MyAgent')
+		}
+	})
+
+	it('allows delete when no agents reference the provider', async () => {
+		const deleteSpy = vi.spyOn(mockRepository, 'delete')
+		vi.mocked(mockAgentRepository.listByProviderId).mockResolvedValueOnce([])
+		await useCase.execute('p1')
+		expect(deleteSpy).toHaveBeenCalledWith('p1')
 	})
 })

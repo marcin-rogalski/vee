@@ -1,4 +1,5 @@
 export { AppError } from './AppError'
+export { ConflictError } from './ConflictError'
 export { InternalError } from './InternalError'
 export { NotFoundError } from './NotFoundError'
 export { ValidationError } from './ValidationError'

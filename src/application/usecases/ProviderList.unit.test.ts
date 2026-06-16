@@ -13,7 +13,12 @@ describe('UC7 — ProviderList use case', () => {
 				id: 'p1',
 				name: 'OpenAI',
 				type: 'openai',
-				configSchema: [],
+				configSchema: {
+					$schema: 'http://json-schema.org/draft-07/schema#',
+					type: 'object',
+					properties: {},
+				},
+				config: {},
 			}),
 			list: async () => [],
 			save: async () => {},
