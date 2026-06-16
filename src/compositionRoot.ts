@@ -19,10 +19,10 @@ import SessionListUseCase from '@application/usecases/SessionList.usecase'
 import OpenAIProvider from '@infrastructure/driven/providers/OpenAIProvider'
 import DefaultProviderRegistry from '@infrastructure/driven/registries/DefaultProviderRegistry'
 import ToolRegistry from '@infrastructure/driven/registries/ToolRegistry'
-import InMemoryAgentRepository from '@infrastructure/driven/repositories/InMemoryAgentRepository'
 import InMemoryContextRepository from '@infrastructure/driven/repositories/InMemoryContextRepository'
-import InMemoryProviderRepository from '@infrastructure/driven/repositories/InMemoryProviderRepository'
 import InMemorySessionRepository from '@infrastructure/driven/repositories/InMemorySessionRepository'
+import JsonAgentRepository from '@infrastructure/driven/repositories/JsonAgentRepository'
+import JsonProviderRepository from '@infrastructure/driven/repositories/JsonProviderRepository'
 import ConsoleLogger from '@infrastructure/utilities/ConsoleLogger.adapter'
 import InMemoryEventBus from '@infrastructure/utilities/InMemoryEventBus'
 import NodeEnvironment from '@infrastructure/utilities/NodeEnvironment.adapter'
@@ -50,8 +50,11 @@ interface CompositionRoot {
 }
 
 const logger = new ConsoleLogger()
-const agentRepository = new InMemoryAgentRepository()
-const providerRepository = new InMemoryProviderRepository()
+const env = new NodeEnvironment(logger)
+const agentRepository = new JsonAgentRepository(env.agentRepositoryPath)
+const providerRepository = new JsonProviderRepository(
+	env.integrationRepositoryPath,
+)
 const sessionRepository = new InMemorySessionRepository()
 const contextRepository = new InMemoryContextRepository()
 const toolRegistry = new ToolRegistry()
@@ -65,7 +68,7 @@ const eventBus = new InMemoryEventBus()
 
 const compositionRoot: CompositionRoot = {
 	logger,
-	env: new NodeEnvironment(logger),
+	env,
 	agentRepository,
 	providerRepository,
 	sessionRepository,

@@ -1,12 +1,19 @@
 import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
 import type Agent from '@domain/Agent'
 import { NotFoundError } from '@domain/errors'
+import JsonFileRepository from './JsonFileRepository'
 
-class InMemoryAgentRepository implements AgentRepositoryPort {
-	private agents: Map<string, Agent> = new Map()
+class JsonAgentRepository
+	extends JsonFileRepository<Agent>
+	implements AgentRepositoryPort
+{
+	constructor(filePath: string) {
+		super(filePath, 'Agent', NotFoundError)
+	}
 
 	async get(id: string): Promise<Agent> {
-		const agent = this.agents.get(id)
+		const agents = await this.read()
+		const agent = agents.find((a) => a.id === id)
 		if (!agent) {
 			throw new NotFoundError('Agent', id)
 		}
@@ -14,7 +21,8 @@ class InMemoryAgentRepository implements AgentRepositoryPort {
 	}
 
 	async list(): Promise<Array<Pick<Agent, 'id' | 'name' | 'description'>>> {
-		return Array.from(this.agents.values()).map((agent) => {
+		const agents = await this.read()
+		return agents.map((agent) => {
 			const result: Pick<Agent, 'id' | 'name' | 'description'> = {
 				id: agent.id,
 				name: agent.name,
@@ -29,18 +37,28 @@ class InMemoryAgentRepository implements AgentRepositoryPort {
 	async listByProviderId(
 		providerId: string,
 	): Promise<Array<Pick<Agent, 'id' | 'name'>>> {
-		return Array.from(this.agents.values())
+		const agents = await this.read()
+		return agents
 			.filter((agent) => agent.providerId === providerId)
 			.map((agent) => ({ id: agent.id, name: agent.name }))
 	}
 
 	async save(agent: Agent): Promise<void> {
-		this.agents.set(agent.id, agent)
+		const agents = await this.read()
+		const existing = agents.find((a) => a.id === agent.id)
+		if (existing) {
+			Object.assign(existing, agent)
+		} else {
+			agents.push(agent)
+		}
+		await this.write(agents)
 	}
 
 	async delete(id: string): Promise<void> {
-		this.agents.delete(id)
+		const agents = await this.read()
+		const filtered = agents.filter((a) => a.id !== id)
+		await this.write(filtered)
 	}
 }
 
-export default InMemoryAgentRepository
+export default JsonAgentRepository

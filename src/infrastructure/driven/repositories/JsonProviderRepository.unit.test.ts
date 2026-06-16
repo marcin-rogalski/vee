@@ -1,12 +1,21 @@
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import type Provider from '@domain/Provider'
-import { beforeEach, describe, expect, it } from 'vitest'
-import InMemoryProviderRepository from './InMemoryProviderRepository'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import JsonProviderRepository from './JsonProviderRepository'
 
-describe('R5 — InMemoryProviderRepository', () => {
-	let repo: InMemoryProviderRepository
+describe('JsonProviderRepository', () => {
+	let tmpDir: string
+	let repo: JsonProviderRepository
 
-	beforeEach(() => {
-		repo = new InMemoryProviderRepository()
+	beforeEach(async () => {
+		tmpDir = await mkdtemp(join(tmpdir(), 'vee-test-'))
+		repo = new JsonProviderRepository(join(tmpDir, 'providers.json'))
+	})
+
+	afterEach(async () => {
+		await rm(tmpDir, { recursive: true, force: true })
 	})
 
 	it('save() stores provider, get() retrieves it', async () => {
@@ -77,5 +86,52 @@ describe('R5 — InMemoryProviderRepository', () => {
 		})
 		await repo.delete('p1')
 		await expect(repo.get('p1')).rejects.toThrow()
+	})
+
+	it('save() updates existing provider', async () => {
+		await repo.save({
+			id: 'p1',
+			name: 'Original',
+			type: 'openai',
+			configSchema: {
+				$schema: 'http://json-schema.org/draft-07/schema#',
+				type: 'object',
+				properties: {},
+			},
+			config: {},
+		})
+		await repo.save({
+			id: 'p1',
+			name: 'Updated',
+			type: 'openai',
+			configSchema: {
+				$schema: 'http://json-schema.org/draft-07/schema#',
+				type: 'object',
+				properties: {},
+			},
+			config: { apiKey: 'new-key' },
+		})
+		const result = await repo.get('p1')
+		expect(result.name).toBe('Updated')
+		expect(result.config).toEqual({ apiKey: 'new-key' })
+	})
+
+	it('persists data across instances', async () => {
+		const provider: Provider = {
+			id: 'p1',
+			name: 'Persistent',
+			type: 'openai',
+			configSchema: {
+				$schema: 'http://json-schema.org/draft-07/schema#',
+				type: 'object',
+				properties: {},
+			},
+			config: {},
+		}
+		await repo.save(provider)
+
+		const repo2 = new JsonProviderRepository(join(tmpDir, 'providers.json'))
+		const retrieved = await repo2.get('p1')
+		expect(retrieved.name).toBe('Persistent')
 	})
 })

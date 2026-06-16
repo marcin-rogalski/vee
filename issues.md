@@ -11,6 +11,7 @@ Living list of issues discovered during lifecycle audit. Grouped by severity. Ea
 
 ### ISS-001: CLI creates agents with empty `providerId`
 
+**Status:** Fixed
 **Area:** CLI / ConfigScreen / AddAgentForm
 **Severity:** Critical
 
@@ -18,6 +19,8 @@ Living list of issues discovered during lifecycle audit. Grouped by severity. Ea
 
 **Impact:** Agent creation via CLI is non-functional for inference.
 **Fix Required:** Task 15 from provider-json-schema-flow plan (refactor AddAgentForm to include provider selection + systemPrompt).
+
+**Fixed:** 2026-06-16 — ConfigScreen refactored to 6-step agent flow (name → description → prompt → provider → overrides → tools). CLI command fixed with --provider, --override, --tool flags.
 
 ---
 
@@ -35,6 +38,7 @@ Living list of issues discovered during lifecycle audit. Grouped by severity. Ea
 
 ### ISS-003: No validation that `Agent.providerId` references an existing provider
 
+**Status:** Fixed
 **Area:** AgentUpsertUseCase
 **Severity:** Critical
 
@@ -42,6 +46,8 @@ Living list of issues discovered during lifecycle audit. Grouped by severity. Ea
 
 **Impact:** Silent data corruption — invalid agent saved, error only surfaces at inference time.
 **Fix Required:** Add `providerRepository.get(agent.providerId)` check in `AgentUpsertUseCase` before save.
+
+**Fixed:** 2026-06-16 — `ProviderRepositoryPort` injected into `AgentUpsertUseCase`, provider existence validated before save.
 
 ---
 
@@ -89,6 +95,7 @@ The CLI command creates providers with `configSchema: { properties: {} }` instea
 
 ### ISS-007: No validation that `Agent.toolIds` reference existing tools
 
+**Status:** Fixed
 **Area:** AgentUpsertUseCase
 **Severity:** High
 
@@ -96,6 +103,8 @@ The CLI command creates providers with `configSchema: { properties: {} }` instea
 
 **Impact:** Agents can reference non-existent tools, errors surface at inference time.
 **Fix Required:** Add tool registry validation in `AgentUpsertUseCase`.
+
+**Fixed:** 2026-06-16 — `ToolRegistryPort` injected into `AgentUpsertUseCase`, tool existence validated before save.
 
 ---
 
@@ -161,22 +170,23 @@ All CRUD usecases do `await this.eventBus.publish(...)` but `publish()` returns 
 **Impact:** Code readability only.
 **Fix Required:** Remove `await` before `eventBus.publish()` calls.
 
-**Fixed:** 2026-06-15 — Provider usecases fixed. Agent usecases remain (tracked in agent-entity-fix plan).
+**Fixed:** 2026-06-15 — Provider usecases fixed. 2026-06-16 — Agent + Infer usecases fixed (all usecases now clean).
 
 ---
 
 ### ISS-016: No CLI command integration tests
 
+**Status:** Fixed (provider + agent scope)
 **Area:** Testing / Commands
 **Severity:** Medium
-**Status:** Partially Fixed (provider scope complete)
 
 Zero test files exist under `src/infrastructure/driving/commands/`. All 12 command files are untested.
 
 **Impact:** Command argument parsing, option validation, and usecase wiring are untested.
 **Fix Required:** Add tests for each command that verify: (a) correct Commander.js options are registered, (b) usecase is called with correct arguments parsed from CLI flags.
 
-**Fixed (Provider scope):** 2026-06-15 — Tests added for `ProvidersList.command.ts` (4 tests) and `ProvidersDelete.command.ts` (5 tests). Agent scope remains.
+**Fixed (Provider scope):** 2026-06-15 — Tests added for `ProvidersList.command.ts` (4 tests) and `ProvidersDelete.command.ts` (5 tests).
+**Fixed (Agent scope):** 2026-06-16 — Tests added for `AgentsList.command.ts`, `AgentsDelete.command.ts`, `AgentsUpsert.command.ts`.
 
 ---
 
@@ -223,7 +233,7 @@ All four repositories use `Map<string, T>` in memory. Data is lost on process ex
 
 ### ISS-015: No interactive mode test coverage for provider/agent config flows
 
-**Status:** Fixed (provider scope)
+**Status:** Fixed
 **Area:** Testing / ConfigScreen
 **Severity:** High
 
@@ -232,7 +242,17 @@ All four repositories use `Map<string, T>` in memory. Data is lost on process ex
 **Impact:** Provider and agent configuration flows are untested in the interactive UI. Regression risk on future changes.
 **Fix Ready:** Add tests for: (a) provider type selection, (b) provider name entry, (c) schema-driven config form submission, (d) agent form with provider selection + overrides.
 
-**Fixed:** 2026-06-16 — Provider flow tests added (7 tests in ConfigScreen.test.tsx, 6 tests in SchemaDrivenForm.test.tsx). Agent config flow tests remain (tracked in agent-entity-fix plan).
+**Fixed:** 2026-06-16 — Provider flow tests added (7 tests in ConfigScreen.test.tsx, 6 tests in SchemaDrivenForm.test.tsx). Agent config flow tests added (17 total ConfigScreen tests including 4 new agent flow tests).
+
+---
+
+## Summary
+
+| Status | Count | Issues |
+|---|---|---|
+| Fixed | 9 | ISS-001, ISS-003, ISS-004, ISS-005, ISS-007, ISS-012, ISS-013, ISS-015, ISS-016 |
+| Open | 7 | ISS-002, ISS-006, ISS-008, ISS-009, ISS-010, ISS-011, ISS-017 |
+| Epic | 1 | ISS-014 |
 
 ---
 
@@ -244,25 +264,22 @@ All four repositories use `Map<string, T>` in memory. Data is lost on process ex
 
 ## Assignment to Plans
 
-| Issue | Assigned To |
-|---|---|
-| ISS-001 | `agent-entity-fix` Phase 3 (AddAgentForm refactor) |
-| ISS-002 | *(unassigned — needs new plan)* |
-| ISS-003 | `agent-entity-fix` Phase 1 |
-| ISS-004 | `provider-entity-fix` Phase 1 Task 1 |
-| ISS-005 | ✅ Fixed |
-| ISS-012 | ✅ Fixed (provider scope) |
-| ISS-013 | ✅ Fixed |
-| ISS-015 | ✅ Fixed (provider scope) |
-| ISS-006 | *(unassigned — needs new plan)* |
-| ISS-007 | `agent-entity-fix` Phase 1 |
-| ISS-008 | *(unassigned — needs new plan)* |
-| ISS-009 | *(unassigned — needs new plan)* |
-| ISS-010 | *(unassigned — needs new plan)* |
-| ISS-011 | *(unassigned — needs new plan)* |
-| ISS-012 | `provider-entity-fix` Phase 1 Task 3 (all usecases scope TBD) |
-| ISS-013 | `provider-entity-fix` Phase 1 Task 2 |
-| ISS-014 | *(unassigned — epic, separate plan)* |
-| ISS-015 | `provider-entity-fix` Phase 3 + `agent-entity-fix` Phase 4 |
-| ISS-016 | `provider-entity-fix` Phase 2 Task 6 + `agent-entity-fix` Phase 2 |
-| ISS-017 | *(depends on ISS-014)* |
+| Issue | Assigned To | Status |
+|---|---|---|
+| ISS-001 | `agent-entity-fix` Phase 3 | ✅ Fixed |
+| ISS-002 | *(unassigned — needs new plan)* | Open |
+| ISS-003 | `agent-entity-fix` Phase 1 | ✅ Fixed |
+| ISS-004 | `provider-entity-fix` Phase 1 Task 1 | ✅ Fixed |
+| ISS-005 | — | ✅ Fixed |
+| ISS-006 | *(unassigned — needs new plan)* | Open |
+| ISS-007 | `agent-entity-fix` Phase 1 | ✅ Fixed |
+| ISS-008 | *(unassigned — needs new plan)* | Open |
+| ISS-009 | *(unassigned — needs new plan)* | Open |
+| ISS-010 | *(unassigned — needs new plan)* | Open |
+| ISS-011 | *(unassigned — needs new plan)* | Open |
+| ISS-012 | `provider-entity-fix` + `agent-entity-fix` | ✅ Fixed |
+| ISS-013 | `provider-entity-fix` Phase 1 Task 2 | ✅ Fixed |
+| ISS-014 | *(unassigned — epic, separate plan)* | Epic |
+| ISS-015 | `provider-entity-fix` + `agent-entity-fix` | ✅ Fixed |
+| ISS-016 | `provider-entity-fix` + `agent-entity-fix` | ✅ Fixed |
+| ISS-017 | *(depends on ISS-014)* | Open |
