@@ -1,18 +1,46 @@
 import type ConversationEntry from '@domain/ConversationEntry'
+import type ProviderPort from '../ports/Provider.port'
 import type { ToolDefinition } from '../ports/Tool.port'
 
 /** Single-turn inference: call provider, stream events, return result.
  *
  * Does NOT own the loop — just one provider call with token/tool-call accumulation.
  */
-class InferUseCase {
+class InferTurnUseCase {
+	constructor(private readonly provider: ProviderPort) {}
+
 	async execute(
-		_context: readonly ConversationEntry[],
-		_configuration: Record<string, unknown>,
-		_tools: readonly ToolDefinition[],
+		context: readonly ConversationEntry[],
+		configuration: Record<string, unknown>,
+		tools: readonly ToolDefinition[],
 	): Promise<InferResult> {
-		// TODO: stream provider events, accumulate tokens and tool calls
-		throw new Error('Not implemented')
+		const tokens: string[] = []
+		const thoughts: string[] = []
+		let toolCalls: Array<{ name: string; arguments: string }> | undefined
+
+		for await (const event of this.provider.infer(
+			configuration,
+			context,
+			tools,
+		)) {
+			switch (event.type) {
+				case 'token':
+					tokens.push(event.content)
+					break
+				case 'thought':
+					thoughts.push(event.content)
+					break
+				case 'tool-call':
+					toolCalls = event.toolCalls
+					break
+			}
+		}
+
+		return {
+			tokens: tokens.join(''),
+			thoughts,
+			...(toolCalls && { toolCalls }),
+		}
 	}
 }
 
@@ -22,4 +50,4 @@ export type InferResult = {
 	thoughts: string[]
 }
 
-export default InferUseCase
+export default InferTurnUseCase

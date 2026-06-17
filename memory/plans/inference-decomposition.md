@@ -40,13 +40,13 @@ Decompose `InferUseCase` into an orchestrator + phase use cases + services, foll
 
 ### Phase 4 — Infer Use Case (single turn)
 
-9. [ ] infer-usecase — Implement `InferUseCase` for single-turn inference (provider call + stream)
-10. [ ] infer-usecase-tests — Add unit tests
+9. [x] infer-usecase — Implement `InferUseCase` for single-turn inference (provider call + stream)
+10. [x] infer-usecase-tests — Add unit tests
 
 ### Phase 5 — Execute Tools Use Case
 
-11. [ ] execute-tools-usecase — Implement `ExecuteToolsUseCase` (batch execution with proper ordering)
-12. [ ] execute-tools-tests — Add unit tests
+11. [x] execute-tools-usecase — Implement `ExecuteToolsUseCase` (batch execution with proper ordering)
+12. [x] execute-tools-tests — Add unit tests
 
 ### Phase 6 — Chat Messages
 

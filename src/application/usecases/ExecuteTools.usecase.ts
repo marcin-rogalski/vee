@@ -8,11 +8,42 @@ import type ToolPort from '../ports/Tool.port'
  */
 class ExecuteToolsUseCase {
 	async execute(
-		_toolCalls: Array<{ name: string; arguments: string }>,
-		_tools: Map<string, ToolPort>,
+		toolCalls: Array<{ name: string; arguments: string }>,
+		tools: Map<string, ToolPort>,
 	): Promise<Array<ConversationEntry>> {
-		// TODO: execute all tool calls with Promise.allSettled, preserve order
-		throw new Error('Not implemented')
+		const promises = toolCalls.map(async ({ name, arguments: args }) => {
+			const tool = tools.get(name)
+			if (!tool) {
+				return {
+					id: crypto.randomUUID(),
+					role: 'system' as const,
+					name,
+					content: `Tool "${name}" not found`,
+					ts: Date.now(),
+				} as ConversationEntry
+			}
+
+			try {
+				const result = await tool.execute(args)
+				return {
+					id: crypto.randomUUID(),
+					role: 'system' as const,
+					name,
+					content: result.content,
+					ts: Date.now(),
+				} as ConversationEntry
+			} catch (error) {
+				return {
+					id: crypto.randomUUID(),
+					role: 'system' as const,
+					name,
+					content: `Error executing "${name}": ${error instanceof Error ? error.message : String(error)}`,
+					ts: Date.now(),
+				} as ConversationEntry
+			}
+		})
+
+		return Promise.all(promises)
 	}
 }
 
