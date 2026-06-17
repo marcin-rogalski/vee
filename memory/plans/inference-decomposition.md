@@ -35,8 +35,8 @@ Decompose `InferUseCase` into an orchestrator + phase use cases + services, foll
 
 ### Phase 3 — Build Context Use Case
 
-7. [ ] build-context-usecase — Implement `BuildContextUseCase` using `ContextService`
-8. [ ] build-context-tests — Add unit tests
+7. [x] build-context-usecase — Implement `BuildContextUseCase` using `ContextService`
+8. [x] build-context-tests — Add unit tests
 
 ### Phase 4 — Infer Use Case (single turn)
 

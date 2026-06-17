@@ -11,11 +11,10 @@ class BuildContextUseCase {
 	constructor(readonly contextService: ContextService) {}
 
 	async execute(
-		_agent: Agent,
-		_sessionId: string,
+		agent: Agent,
+		sessionId: string,
 	): Promise<Array<ConversationEntry>> {
-		// TODO: delegate to contextService.build(agent, sessionId)
-		throw new Error('Not implemented')
+		return this.contextService.build(agent, sessionId)
 	}
 }
 
