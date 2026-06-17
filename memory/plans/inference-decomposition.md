@@ -1,8 +1,8 @@
 # Plan: Inference Decomposition
 
-**Status:** in-progress
+**Status:** done
 **Created:** 2026-06-16
-**Updated:** 2026-06-16
+**Updated:** 2026-06-17
 
 Decompose `InferUseCase` into an orchestrator + phase use cases + services, following ADR-008.
 

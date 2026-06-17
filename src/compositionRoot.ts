@@ -1,4 +1,5 @@
 import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
+import type ChatMessageRepositoryPort from '@application/ports/ChatMessageRepository.port'
 import type ContextRepositoryPort from '@application/ports/ContextRepository.port'
 import type EventBusPort from '@application/ports/EventBus.port'
 import type LoggerPort from '@application/ports/Logger.port'
@@ -9,7 +10,8 @@ import type ToolRegistryPort from '@application/ports/ToolRgistry.port'
 import AgentDeleteUseCase from '@application/usecases/AgentDelete.usecase'
 import AgentListUseCase from '@application/usecases/AgentList.usecase'
 import AgentUpsertUseCase from '@application/usecases/AgentUpsert.usecase'
-import InferUseCase from '@application/usecases/Infer.usecase'
+import BuildContextUseCase from '@application/usecases/BuildContext.usecase'
+import InferOrchestratorUseCase from '@application/usecases/InferOrchestrator.usecase'
 import ProviderDeleteUseCase from '@application/usecases/ProviderDelete.usecase'
 import ProviderListUseCase from '@application/usecases/ProviderList.usecase'
 import ProviderUpsertUseCase from '@application/usecases/ProviderUpsert.usecase'
@@ -19,10 +21,13 @@ import SessionListUseCase from '@application/usecases/SessionList.usecase'
 import OpenAIProvider from '@infrastructure/driven/providers/OpenAIProvider'
 import DefaultProviderRegistry from '@infrastructure/driven/registries/DefaultProviderRegistry'
 import ToolRegistry from '@infrastructure/driven/registries/ToolRegistry'
+import InMemoryChatMessageRepository from '@infrastructure/driven/repositories/InMemoryChatMessageRepository'
 import InMemoryContextRepository from '@infrastructure/driven/repositories/InMemoryContextRepository'
 import InMemorySessionRepository from '@infrastructure/driven/repositories/InMemorySessionRepository'
 import JsonAgentRepository from '@infrastructure/driven/repositories/JsonAgentRepository'
 import JsonProviderRepository from '@infrastructure/driven/repositories/JsonProviderRepository'
+import ChatMessageServiceAdapter from '@infrastructure/driven/services/ChatMessageService.adapter'
+import ContextServiceAdapter from '@infrastructure/driven/services/ContextService.adapter'
 import ConsoleLogger from '@infrastructure/utilities/ConsoleLogger.adapter'
 import InMemoryEventBus from '@infrastructure/utilities/InMemoryEventBus'
 import NodeEnvironment from '@infrastructure/utilities/NodeEnvironment.adapter'
@@ -34,6 +39,7 @@ interface CompositionRoot {
 	providerRepository: ProviderRepositoryPort
 	sessionRepository: SessionRepositoryPort
 	contextRepository: ContextRepositoryPort
+	chatMessageRepository: ChatMessageRepositoryPort
 	toolRegistry: ToolRegistryPort
 	providerRegistry: ProviderRegistryPort
 	eventBus: EventBusPort
@@ -46,7 +52,7 @@ interface CompositionRoot {
 	sessionCreate: InstanceType<typeof SessionCreateUseCase>
 	sessionList: InstanceType<typeof SessionListUseCase>
 	sessionDelete: InstanceType<typeof SessionDeleteUseCase>
-	infer: InstanceType<typeof InferUseCase>
+	infer: InstanceType<typeof InferOrchestratorUseCase>
 }
 
 const logger = new ConsoleLogger()
@@ -57,6 +63,7 @@ const providerRepository = new JsonProviderRepository(
 )
 const sessionRepository = new InMemorySessionRepository()
 const contextRepository = new InMemoryContextRepository()
+const chatMessageRepository = new InMemoryChatMessageRepository()
 const toolRegistry = new ToolRegistry()
 const providerRegistry = new DefaultProviderRegistry()
 providerRegistry.register(
@@ -66,6 +73,10 @@ providerRegistry.register(
 )
 const eventBus = new InMemoryEventBus()
 
+const contextService = new ContextServiceAdapter(contextRepository)
+const chatMessageService = new ChatMessageServiceAdapter(chatMessageRepository)
+const buildContextUseCase = new BuildContextUseCase(contextService)
+
 const compositionRoot: CompositionRoot = {
 	logger,
 	env,
@@ -73,6 +84,7 @@ const compositionRoot: CompositionRoot = {
 	providerRepository,
 	sessionRepository,
 	contextRepository,
+	chatMessageRepository,
 	toolRegistry,
 	providerRegistry,
 	eventBus,
@@ -94,14 +106,15 @@ const compositionRoot: CompositionRoot = {
 	sessionCreate: new SessionCreateUseCase(sessionRepository, eventBus),
 	sessionList: new SessionListUseCase(sessionRepository),
 	sessionDelete: new SessionDeleteUseCase(sessionRepository, eventBus),
-	infer: new InferUseCase(
-		sessionRepository,
-		contextRepository,
+	infer: new InferOrchestratorUseCase(
+		agentRepository,
 		providerRepository,
 		providerRegistry,
-		agentRepository,
 		toolRegistry,
+		contextService,
+		chatMessageService,
 		eventBus,
+		buildContextUseCase,
 	),
 }
 

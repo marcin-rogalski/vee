@@ -1,17 +1,17 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: it is expected in tests */
-import type InferUseCase from '@application/usecases/Infer.usecase'
+import type InferOrchestratorUseCase from '@application/usecases/InferOrchestrator.usecase'
 import type { RequestHandler } from 'express'
 import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest'
 import Infer from './Infer.adapter'
 
 describe('Infer', () => {
-	let mockUseCase: InferUseCase
+	let mockUseCase: InferOrchestratorUseCase
 	let endpoint: import('@infrastructure/utilities/ExpressEndpoint.adapter').IEndpoint
 
 	beforeEach(() => {
 		mockUseCase = {
 			execute: vi.fn().mockResolvedValue(undefined),
-		} as unknown as InferUseCase
+		} as unknown as InferOrchestratorUseCase
 		endpoint = Infer(mockUseCase)
 	})
 

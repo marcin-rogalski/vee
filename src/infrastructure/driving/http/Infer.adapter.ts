@@ -1,8 +1,8 @@
-import type InferUseCase from '@application/usecases/Infer.usecase'
+import type InferOrchestratorUseCase from '@application/usecases/InferOrchestrator.usecase'
 import ExpressEndpoint from '@infrastructure/utilities/ExpressEndpoint.adapter'
 import z from 'zod'
 
-const Infer = (useCase: InferUseCase) =>
+const Infer = (useCase: InferOrchestratorUseCase) =>
 	ExpressEndpoint.createEndpoint(
 		'POST',
 		'/infer',

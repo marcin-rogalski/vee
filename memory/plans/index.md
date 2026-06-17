@@ -4,13 +4,15 @@
 
 | Slug | Status | Summary |
 |---|---|---|
-| provider-entity-fix | in progress | Fix every known Provider issue (validation, cascade, commands, tests) |
-| agent-entity-fix | pending | Fix every known Agent issue (validation, cascade, commands, tests) |
+| persistence-and-cascade | pending | JSON persistence + in-memory cache for all entities, cascade deletes, Session.agentId, schema validation on load |
 
 ## Completed Plans
 
 | Slug | Status | Summary |
 |---|---|---|
+| inference-decomposition | done | Decompose InferUseCase into orchestrator + phase use cases + services |
+| provider-entity-fix | done | Fix every known Provider issue (validation, cascade, commands, tests) |
+| agent-entity-fix | done | Fix every known Agent issue (validation, cascade, commands, tests) |
 | provider-json-schema-flow | done | Replace ConfigurationSchema DSL with JSON Schema |
 | cli-refactor-decouple-screens | implemented | Decouple screens from god Client interface |
 

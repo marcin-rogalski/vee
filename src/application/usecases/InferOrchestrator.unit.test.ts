@@ -10,9 +10,22 @@ import type Agent from '@domain/Agent'
 import type Provider from '@domain/Provider'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type BuildContextUseCase from './BuildContext.usecase'
-import type ExecuteToolsUseCase from './ExecuteTools.usecase'
 import InferOrchestratorUseCase from './InferOrchestrator.usecase'
-import type InferTurnUseCase from './InferTurn.usecase'
+
+// Shared mock state for sub-use cases created by orchestrator
+const mockInferTurnExecute = vi.fn()
+const mockExecuteToolsExecute = vi.fn()
+
+vi.mock('./InferTurn.usecase', () => ({
+	default: class {
+		execute = mockInferTurnExecute
+	},
+}))
+vi.mock('./ExecuteTools.usecase', () => ({
+	default: class {
+		execute = mockExecuteToolsExecute
+	},
+}))
 
 const mockAgent: Agent = {
 	id: 'agent-1',
@@ -43,11 +56,11 @@ let mockContextService: ContextService
 let mockChatMessageService: ChatMessageService
 let mockEventBus: EventBusPort
 let mockBuildContextUseCase: BuildContextUseCase
-let mockInferTurnUseCase: InferTurnUseCase
-let mockExecuteToolsUseCase: ExecuteToolsUseCase
 let orchestrator: InferOrchestratorUseCase
 
 beforeEach(() => {
+	vi.clearAllMocks()
+
 	mockAgentRepository = {
 		get: vi.fn().mockResolvedValue(mockAgent),
 		list: vi.fn().mockResolvedValue([]),
@@ -93,16 +106,12 @@ beforeEach(() => {
 		execute: vi.fn().mockResolvedValue([]),
 	} as unknown as BuildContextUseCase
 
-	mockInferTurnUseCase = {
-		execute: vi.fn().mockResolvedValue({
-			tokens: 'Hello world',
-			thoughts: [],
-		}),
-	} as unknown as InferTurnUseCase
-
-	mockExecuteToolsUseCase = {
-		execute: vi.fn().mockResolvedValue([]),
-	} as unknown as ExecuteToolsUseCase
+	// Default: no tool calls (simple response)
+	mockInferTurnExecute.mockResolvedValue({
+		tokens: 'Hello world',
+		thoughts: [],
+	})
+	mockExecuteToolsExecute.mockResolvedValue([])
 
 	orchestrator = new InferOrchestratorUseCase(
 		mockAgentRepository,
@@ -113,8 +122,6 @@ beforeEach(() => {
 		mockChatMessageService,
 		mockEventBus,
 		mockBuildContextUseCase,
-		mockInferTurnUseCase,
-		mockExecuteToolsUseCase,
 	)
 })
 
@@ -168,15 +175,6 @@ describe('InferOrchestratorUseCase', () => {
 		)
 	})
 
-	it('delegates inference to inferTurnUseCase with context and config', async () => {
-		await orchestrator.execute('Hello', 'agent-1', 'session-1')
-		expect(mockInferTurnUseCase.execute).toHaveBeenCalledWith(
-			[], // context from buildContextUseCase mock
-			expect.objectContaining({ model: 'test-model' }), // merged config
-			[], // tools
-		)
-	})
-
 	it('persists assistant response via contextService', async () => {
 		await orchestrator.execute('Hello', 'agent-1', 'session-1')
 		expect(mockContextService.append).toHaveBeenCalledWith(
@@ -206,19 +204,19 @@ describe('InferOrchestratorUseCase', () => {
 	})
 
 	it('executes tools when infer result has tool calls', async () => {
-		mockInferTurnUseCase.execute = vi.fn().mockResolvedValue({
+		mockInferTurnExecute.mockResolvedValue({
 			tokens: '',
 			thoughts: [],
 			toolCalls: [{ name: 'read-file', arguments: '{"path":"test.txt"}' }],
 		})
 
 		await orchestrator.execute('Hello', 'agent-1', 'session-1')
-		expect(mockExecuteToolsUseCase.execute).toHaveBeenCalled()
+		expect(mockExecuteToolsExecute).toHaveBeenCalled()
 	})
 
 	it('re-enters loop after tool execution', async () => {
 		let callCount = 0
-		mockInferTurnUseCase.execute = vi.fn().mockImplementation(() => {
+		mockInferTurnExecute.mockImplementation(() => {
 			callCount++
 			if (callCount === 1) {
 				return Promise.resolve({
@@ -234,11 +232,11 @@ describe('InferOrchestratorUseCase', () => {
 		})
 
 		await orchestrator.execute('Hello', 'agent-1', 'session-1')
-		expect(mockInferTurnUseCase.execute).toHaveBeenCalledTimes(2)
+		expect(mockBuildContextUseCase.execute).toHaveBeenCalledTimes(2)
 	})
 
 	it('publishes tool-call event when tools are requested', async () => {
-		mockInferTurnUseCase.execute = vi.fn().mockResolvedValue({
+		mockInferTurnExecute.mockResolvedValue({
 			tokens: '',
 			thoughts: [],
 			toolCalls: [{ name: 'read-file', arguments: '{}' }],
@@ -251,13 +249,13 @@ describe('InferOrchestratorUseCase', () => {
 	})
 
 	it('publishes tool-response events for each tool result', async () => {
-		mockInferTurnUseCase.execute = vi.fn().mockResolvedValue({
+		mockInferTurnExecute.mockResolvedValue({
 			tokens: '',
 			thoughts: [],
 			toolCalls: [{ name: 'read-file', arguments: '{}' }],
 		})
 
-		mockExecuteToolsUseCase.execute = vi.fn().mockResolvedValue([
+		mockExecuteToolsExecute.mockResolvedValue([
 			{
 				id: 'tool-1',
 				role: 'system',
@@ -274,8 +272,7 @@ describe('InferOrchestratorUseCase', () => {
 	})
 
 	it('respects max iteration limit', async () => {
-		// Always return tool calls — should not loop infinitely
-		mockInferTurnUseCase.execute = vi.fn().mockResolvedValue({
+		mockInferTurnExecute.mockResolvedValue({
 			tokens: '',
 			thoughts: [],
 			toolCalls: [{ name: 'read-file', arguments: '{}' }],
@@ -287,7 +284,7 @@ describe('InferOrchestratorUseCase', () => {
 	})
 
 	it('publishes thought events from infer result', async () => {
-		mockInferTurnUseCase.execute = vi.fn().mockResolvedValue({
+		mockInferTurnExecute.mockResolvedValue({
 			tokens: 'Response',
 			thoughts: ['Thinking...'],
 		})

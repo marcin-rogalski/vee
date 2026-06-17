@@ -8,8 +8,8 @@ import type ToolRegistryPort from '../ports/ToolRgistry.port'
 import type ChatMessageService from '../services/ChatMessageService.port'
 import type ContextService from '../services/ContextService.port'
 import type BuildContextUseCase from './BuildContext.usecase'
-import type ExecuteToolsUseCase from './ExecuteTools.usecase'
-import type InferTurnUseCase from './InferTurn.usecase'
+import ExecuteToolsUseCase from './ExecuteTools.usecase'
+import InferTurnUseCase from './InferTurn.usecase'
 
 /** Orchestrator that owns the inference loop.
  *
@@ -33,8 +33,6 @@ class InferOrchestratorUseCase {
 		readonly chatMessageService: ChatMessageService,
 		readonly eventBus: EventBusPort,
 		readonly buildContextUseCase: BuildContextUseCase,
-		readonly inferTurnUseCase: InferTurnUseCase,
-		readonly executeToolsUseCase: ExecuteToolsUseCase,
 	) {}
 
 	async execute(
@@ -45,7 +43,7 @@ class InferOrchestratorUseCase {
 		// --- Resolve phase (once) ---
 		const agent = await this.agentRepository.get(agentId)
 		const providerEntity = await this.providerRepository.get(agent.providerId)
-		const _provider = this.providerRegistry.resolve(providerEntity)
+		const provider = this.providerRegistry.resolve(providerEntity)
 		const tools = agent.toolIds.map(
 			(id) => this.toolRegistry.get(id).definition,
 		)
@@ -58,6 +56,10 @@ class InferOrchestratorUseCase {
 			...providerEntity.config,
 			...agent.providerOverrides,
 		}
+
+		// Create sub-use cases with resolved provider (provider is runtime-dependent)
+		const inferTurnUseCase = new InferTurnUseCase(provider)
+		const executeToolsUseCase = new ExecuteToolsUseCase()
 
 		// --- Persist user prompt ---
 		const userEntry: ConversationEntry = {
@@ -84,7 +86,7 @@ class InferOrchestratorUseCase {
 			const context = await this.buildContextUseCase.execute(agent, sessionId)
 
 			// Single-turn inference
-			const result = await this.inferTurnUseCase.execute(
+			const result = await inferTurnUseCase.execute(
 				context,
 				mergedConfig,
 				tools,
@@ -129,7 +131,7 @@ class InferOrchestratorUseCase {
 				})
 
 				// Execute tools and persist results
-				const toolResults = await this.executeToolsUseCase.execute(
+				const toolResults = await executeToolsUseCase.execute(
 					result.toolCalls,
 					toolMap,
 				)
