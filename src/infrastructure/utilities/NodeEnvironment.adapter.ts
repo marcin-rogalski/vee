@@ -15,6 +15,8 @@ class NodeEnvironment {
 		AGENT_REPOSITORY_FILE: z.string().default('agents.json'),
 		PROVIDER_REPOSITORY_FILE: z.string().default('integrations.json'),
 		SESSION_REPOSITORY_FILE: z.string().default('sessions.json'),
+		CONTEXT_REPOSITORY_FILE: z.string().default('context.json'),
+		CHAT_MESSAGE_REPOSITORY_FILE: z.string().default('chat-messages.json'),
 
 		// ports
 		SEVER_PORT: z.coerce.number().default(3000),
@@ -27,6 +29,8 @@ class NodeEnvironment {
 	public readonly agentRepositoryPath: string
 	public readonly integrationRepositoryPath: string
 	public readonly sessionRepositoryPath: string
+	public readonly contextRepositoryPath: string
+	public readonly chatMessageRepositoryPath: string
 
 	//ports
 	public readonly serverPort: number
@@ -50,6 +54,14 @@ class NodeEnvironment {
 			env.CONFIG_FOLDER,
 			env.SESSION_REPOSITORY_FILE,
 		)
+		this.contextRepositoryPath = join(
+			env.CONFIG_FOLDER,
+			env.CONTEXT_REPOSITORY_FILE,
+		)
+		this.chatMessageRepositoryPath = join(
+			env.CONFIG_FOLDER,
+			env.CHAT_MESSAGE_REPOSITORY_FILE,
+		)
 
 		// ports
 		this.serverPort = env.SEVER_PORT
@@ -60,6 +72,8 @@ class NodeEnvironment {
 			agentRepositoryPath: this.agentRepositoryPath,
 			integrationRepositoryPath: this.integrationRepositoryPath,
 			sessionRepositoryPath: this.sessionRepositoryPath,
+			contextRepositoryPath: this.contextRepositoryPath,
+			chatMessageRepositoryPath: this.chatMessageRepositoryPath,
 			serverPort: env.SEVER_PORT,
 		})
 	}

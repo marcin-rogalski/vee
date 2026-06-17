@@ -21,11 +21,11 @@ import SessionListUseCase from '@application/usecases/SessionList.usecase'
 import OpenAIProvider from '@infrastructure/driven/providers/OpenAIProvider'
 import DefaultProviderRegistry from '@infrastructure/driven/registries/DefaultProviderRegistry'
 import ToolRegistry from '@infrastructure/driven/registries/ToolRegistry'
-import InMemoryChatMessageRepository from '@infrastructure/driven/repositories/InMemoryChatMessageRepository'
-import InMemoryContextRepository from '@infrastructure/driven/repositories/InMemoryContextRepository'
-import InMemorySessionRepository from '@infrastructure/driven/repositories/InMemorySessionRepository'
 import JsonAgentRepository from '@infrastructure/driven/repositories/JsonAgentRepository'
+import JsonChatMessageRepository from '@infrastructure/driven/repositories/JsonChatMessageRepository'
+import JsonContextRepository from '@infrastructure/driven/repositories/JsonContextRepository'
 import JsonProviderRepository from '@infrastructure/driven/repositories/JsonProviderRepository'
+import JsonSessionRepository from '@infrastructure/driven/repositories/JsonSessionRepository'
 import ChatMessageServiceAdapter from '@infrastructure/driven/services/ChatMessageService.adapter'
 import ContextServiceAdapter from '@infrastructure/driven/services/ContextService.adapter'
 import ConsoleLogger from '@infrastructure/utilities/ConsoleLogger.adapter'
@@ -61,9 +61,11 @@ const agentRepository = new JsonAgentRepository(env.agentRepositoryPath)
 const providerRepository = new JsonProviderRepository(
 	env.integrationRepositoryPath,
 )
-const sessionRepository = new InMemorySessionRepository()
-const contextRepository = new InMemoryContextRepository()
-const chatMessageRepository = new InMemoryChatMessageRepository()
+const sessionRepository = new JsonSessionRepository(env.sessionRepositoryPath)
+const contextRepository = new JsonContextRepository(env.contextRepositoryPath)
+const chatMessageRepository = new JsonChatMessageRepository(
+	env.chatMessageRepositoryPath,
+)
 const toolRegistry = new ToolRegistry()
 const providerRegistry = new DefaultProviderRegistry()
 providerRegistry.register(
