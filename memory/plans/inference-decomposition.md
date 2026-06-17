@@ -50,9 +50,9 @@ Decompose `InferUseCase` into an orchestrator + phase use cases + services, foll
 
 ### Phase 6 — Chat Messages
 
-13. [ ] chat-message-repo — Create `ChatMessageRepositoryPort` and in-memory implementation
-14. [ ] chat-message-service — Implement `ChatMessageService` (append-only)
-15. [ ] chat-message-tests — Add unit tests
+13. [x] chat-message-repo — Create `ChatMessageRepositoryPort` and in-memory implementation
+14. [x] chat-message-service — Implement `ChatMessageService` (append-only)
+15. [x] chat-message-tests — Add unit tests
 
 ### Phase 7 — Wire & Cleanup
 

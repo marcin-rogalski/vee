@@ -13,10 +13,11 @@ class InMemoryChatMessageRepository implements ChatMessageRepositoryPort {
 	}
 
 	async deleteBySession(sessionId: string): Promise<void> {
-		const index = this.messages.findIndex((m) => m.sessionId === sessionId)
-		if (index !== -1) {
-			this.messages.splice(index, this.messages.length)
-		}
+		this.messages.splice(
+			0,
+			this.messages.length,
+			...this.messages.filter((m) => m.sessionId !== sessionId),
+		)
 	}
 }
 
