@@ -8,7 +8,9 @@ const SessionList = (useCase: SessionListUseCase) =>
 		'/sessions',
 		{
 			response: z.object({
-				sessions: z.array(z.object({ id: z.string(), name: z.string() })),
+				sessions: z.array(
+					z.object({ id: z.string(), name: z.string(), agentId: z.string() }),
+				),
 			}),
 		},
 		async () => {

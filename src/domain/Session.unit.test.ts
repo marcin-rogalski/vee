@@ -5,13 +5,15 @@ describe('D3 — Session type shape', () => {
 	const validSession: Session = {
 		id: 'session-1',
 		name: 'Test Session',
+		agentId: 'agent-1',
 		createdAt: 1700000000000,
 		updatedAt: 1700000001000,
 	}
 
-	it('creates valid Session with id, name, createdAt, updatedAt', () => {
+	it('creates valid Session with id, name, agentId, createdAt, updatedAt', () => {
 		expect(validSession.id).toBe('session-1')
 		expect(validSession.name).toBe('Test Session')
+		expect(validSession.agentId).toBe('agent-1')
 		expect(validSession.createdAt).toBe(1700000000000)
 		expect(validSession.updatedAt).toBe(1700000001000)
 	})
@@ -23,7 +25,13 @@ describe('D3 — Session type shape', () => {
 
 	it('has all required keys present on valid object', () => {
 		const keys = Object.keys(validSession).sort()
-		const requiredKeys = ['createdAt', 'id', 'name', 'updatedAt'].sort()
+		const requiredKeys = [
+			'agentId',
+			'createdAt',
+			'id',
+			'name',
+			'updatedAt',
+		].sort()
 		expect(keys).toEqual(requiredKeys)
 	})
 })
@@ -35,6 +43,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Session = {
 				id: '',
 				name: 'Test Session',
+				agentId: 'agent-1',
 				createdAt: 1700000000000,
 				updatedAt: 1700000001000,
 			}
@@ -46,6 +55,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Session = {
 				id: 'session-1',
 				name: '',
+				agentId: 'agent-1',
 				createdAt: 1700000000000,
 				updatedAt: 1700000001000,
 			}
@@ -61,6 +71,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Session = {
 				id: 'session-1',
 				name: 'Test Session',
+				agentId: 'agent-1',
 				createdAt: timestamp,
 				updatedAt: timestamp,
 			}
@@ -71,6 +82,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Session = {
 				id: 'session-1',
 				name: 'Test Session',
+				agentId: 'agent-1',
 				createdAt: 0,
 				updatedAt: 0,
 			}
@@ -85,6 +97,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Session = {
 				id: 'session-1',
 				name: 'Test Session',
+				agentId: 'agent-1',
 				createdAt: -1700000000000,
 				updatedAt: -1700000001000,
 			}
@@ -97,6 +110,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Session = {
 				id: 'session-1',
 				name: 'Test Session',
+				agentId: 'agent-1',
 				createdAt: maxSafe,
 				updatedAt: maxSafe,
 			}
@@ -108,6 +122,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Session = {
 				id: 'session-1',
 				name: 'Test Session',
+				agentId: 'agent-1',
 				createdAt: -100,
 				updatedAt: Number.MAX_SAFE_INTEGER,
 			}
@@ -123,6 +138,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Session = {
 				id: longId,
 				name: 'Test Session',
+				agentId: 'agent-1',
 				createdAt: 1700000000000,
 				updatedAt: 1700000001000,
 			}
@@ -134,6 +150,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Session = {
 				id: 'session-1',
 				name: longName,
+				agentId: 'agent-1',
 				createdAt: 1700000000000,
 				updatedAt: 1700000001000,
 			}
@@ -148,6 +165,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Session = {
 				id: uuid,
 				name: 'Test Session',
+				agentId: 'agent-1',
 				createdAt: 1700000000000,
 				updatedAt: 1700000001000,
 			}
@@ -159,6 +177,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Session = {
 				id: alphanumId,
 				name: 'Test Session',
+				agentId: 'agent-1',
 				createdAt: 1700000000000,
 				updatedAt: 1700000001000,
 			}
@@ -170,6 +189,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Session = {
 				id: hexId,
 				name: 'Test Session',
+				agentId: 'agent-1',
 				createdAt: 1700000000000,
 				updatedAt: 1700000001000,
 			}
@@ -181,6 +201,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Session = {
 				id: 'session-1',
 				name: base64Name,
+				agentId: 'agent-1',
 				createdAt: 1700000000000,
 				updatedAt: 1700000001000,
 			}
@@ -194,6 +215,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Session = {
 				id: 'session-1',
 				name: 'Test Session',
+				agentId: 'agent-1',
 				createdAt: 1700000000000,
 				updatedAt: 1700000002000,
 			}
@@ -204,6 +226,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Partial<Session> = {
 				id: 'session-1',
 				name: 'Test Session',
+				agentId: 'agent-1',
 				createdAt: 1700000002000,
 				updatedAt: 1700000000000,
 			}
@@ -216,6 +239,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 		it('handles missing id field', () => {
 			const session: Partial<Session> = {
 				name: 'Test Session',
+				agentId: 'agent-1',
 				createdAt: 1700000000000,
 				updatedAt: 1700000001000,
 			}
@@ -235,6 +259,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Partial<Session> = {
 				id: 'session-1',
 				name: 'Test Session',
+				agentId: 'agent-1',
 				updatedAt: 1700000001000,
 			}
 			expect(session.createdAt).toBeUndefined()
@@ -244,6 +269,7 @@ describe('D4 — Session edge cases and boundary values', () => {
 			const session: Partial<Session> = {
 				id: 'session-1',
 				name: 'Test Session',
+				agentId: 'agent-1',
 				createdAt: 1700000000000,
 			}
 			expect(session.updatedAt).toBeUndefined()

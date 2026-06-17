@@ -3,7 +3,7 @@ import type SessionRepositoryPort from '@application/ports/SessionRepository.por
 class SessionListUseCase {
 	constructor(readonly sessionRepository: SessionRepositoryPort) {}
 
-	async execute(): Promise<Array<Pick<Session, 'id' | 'name'>>> {
+	async execute(): Promise<Array<Pick<Session, 'id' | 'name' | 'agentId'>>> {
 		return await this.sessionRepository.list()
 	}
 }

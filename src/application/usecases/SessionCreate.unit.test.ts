@@ -16,13 +16,15 @@ describe('UC4 — SessionCreate use case', () => {
 			get: async () => ({
 				id: 'session-1',
 				name: '',
+				agentId: 'agent-1',
 				createdAt: 0,
 				updatedAt: 0,
 			}),
 			list: async () => [],
-			create: async (name: string) => ({
+			create: async (name: string, agentId: string) => ({
 				id: 'session-1',
 				name,
+				agentId,
 				createdAt: 0,
 				updatedAt: 0,
 			}),
@@ -43,30 +45,31 @@ describe('UC4 — SessionCreate use case', () => {
 	})
 
 	it('returns session id from repository', async () => {
-		const result = await useCase.execute()
+		const result = await useCase.execute(undefined, 'agent-1')
 		expect(result).toBe('session-1')
 	})
 
 	it('passes empty string when name is undefined', async () => {
 		const createSpy = vi.spyOn(mockRepository, 'create')
-		await useCase.execute()
-		expect(createSpy).toHaveBeenCalledWith('')
+		await useCase.execute(undefined, 'agent-1')
+		expect(createSpy).toHaveBeenCalledWith('', 'agent-1')
 	})
 
 	it('passes provided name when given', async () => {
 		const createSpy = vi.spyOn(mockRepository, 'create')
-		await useCase.execute('My Session')
-		expect(createSpy).toHaveBeenCalledWith('My Session')
+		await useCase.execute('My Session', 'agent-1')
+		expect(createSpy).toHaveBeenCalledWith('My Session', 'agent-1')
 	})
 
 	it('publishes a session-created event', async () => {
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-		await useCase.execute('Test Session')
+		await useCase.execute('Test Session', 'agent-1')
 		expect(publishSpy).toHaveBeenCalledWith(
 			expect.objectContaining({
 				type: 'session-created',
 				sessionId: 'session-1',
 				name: 'Test Session',
+				agentId: 'agent-1',
 				id: expect.any(String),
 				role: 'system',
 				ts: expect.any(Number),
@@ -76,7 +79,7 @@ describe('UC4 — SessionCreate use case', () => {
 
 	it('publishes event envelope with correct type contract (single argument)', async () => {
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-		await useCase.execute('Another Session')
+		await useCase.execute('Another Session', 'agent-1')
 		const envelope = publishSpy.mock.calls[0]?.[0] as Extract<
 			Envelope,
 			{ type: 'session-created' }
@@ -88,6 +91,7 @@ describe('UC4 — SessionCreate use case', () => {
 		expect(envelope.type).toBe('session-created')
 		expect(envelope.sessionId).toBe('session-1')
 		expect(envelope.name).toBe('Another Session')
+		expect(envelope.agentId).toBe('agent-1')
 		expect(envelope.role).toBe('system')
 	})
 
@@ -95,13 +99,14 @@ describe('UC4 — SessionCreate use case', () => {
 		vi.spyOn(mockRepository, 'create').mockResolvedValue({
 			id: 'session-2',
 			name: 'Error Session',
+			agentId: 'agent-1',
 			createdAt: 0,
 			updatedAt: 0,
 		})
 		vi.spyOn(mockEventBus, 'publish').mockRejectedValue(
 			new Error('Event bus unavailable'),
 		)
-		const result = await useCase.execute('Error Session')
+		const result = await useCase.execute('Error Session', 'agent-1')
 		expect(result).toBe('session-2')
 	})
 
@@ -109,50 +114,50 @@ describe('UC4 — SessionCreate use case', () => {
 
 	it('passes empty string when name is a number', async () => {
 		const createSpy = vi.spyOn(mockRepository, 'create')
-		await useCase.execute(42 as unknown as string)
-		expect(createSpy).toHaveBeenCalledWith('')
+		await useCase.execute(42 as unknown as string, 'agent-1')
+		expect(createSpy).toHaveBeenCalledWith('', 'agent-1')
 	})
 
 	it('passes empty string when name is null', async () => {
 		const createSpy = vi.spyOn(mockRepository, 'create')
-		await useCase.execute(null as unknown as string)
-		expect(createSpy).toHaveBeenCalledWith('')
+		await useCase.execute(null as unknown as string, 'agent-1')
+		expect(createSpy).toHaveBeenCalledWith('', 'agent-1')
 	})
 
 	it('passes empty string when name is a boolean', async () => {
 		const createSpy = vi.spyOn(mockRepository, 'create')
-		await useCase.execute(true as unknown as string)
-		expect(createSpy).toHaveBeenCalledWith('')
+		await useCase.execute(true as unknown as string, 'agent-1')
+		expect(createSpy).toHaveBeenCalledWith('', 'agent-1')
 	})
 
 	// --- Edge case: empty string name (falsy but not null/undefined) ---
 
 	it('passes empty string when name is explicitly empty string', async () => {
 		const createSpy = vi.spyOn(mockRepository, 'create')
-		await useCase.execute('')
-		expect(createSpy).toHaveBeenCalledWith('')
+		await useCase.execute('', 'agent-1')
+		expect(createSpy).toHaveBeenCalledWith('', 'agent-1')
 	})
 
 	// --- Edge case: boundary lengths ---
 
 	it('handles single character name', async () => {
 		const createSpy = vi.spyOn(mockRepository, 'create')
-		await useCase.execute('A')
-		expect(createSpy).toHaveBeenCalledWith('A')
+		await useCase.execute('A', 'agent-1')
+		expect(createSpy).toHaveBeenCalledWith('A', 'agent-1')
 	})
 
 	it('handles very long name (10K+ characters)', async () => {
 		const createSpy = vi.spyOn(mockRepository, 'create')
 		const longName = 'x'.repeat(10001)
-		await useCase.execute(longName)
-		expect(createSpy).toHaveBeenCalledWith(longName)
+		await useCase.execute(longName, 'agent-1')
+		expect(createSpy).toHaveBeenCalledWith(longName, 'agent-1')
 	})
 
 	// --- Event envelope structure verification ---
 
 	it('publishes event with sessionId and name from the session object', async () => {
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-		await useCase.execute('Boundary Session')
+		await useCase.execute('Boundary Session', 'agent-1')
 		const envelope = publishSpy.mock.calls[0]?.[0] as Extract<
 			Envelope,
 			{ type: 'session-created' }

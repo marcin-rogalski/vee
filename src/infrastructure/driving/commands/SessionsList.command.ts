@@ -4,7 +4,7 @@ import { Command } from 'commander'
 
 export type SessionsListCommandDeps = {
 	sessionListUseCase: {
-		execute(): Promise<Array<Pick<Session, 'id' | 'name'>>>
+		execute(): Promise<Array<Pick<Session, 'id' | 'name' | 'agentId'>>>
 	}
 	logger: LoggerPort
 }
@@ -22,7 +22,7 @@ export function createSessionsListCommand(
 			}
 			deps.logger.info('Sessions')
 			for (const s of sessions) {
-				deps.logger.info(`${s.id} - ${s.name}`)
+				deps.logger.info(`${s.id} - ${s.name} (agent: ${s.agentId})`)
 			}
 		})
 

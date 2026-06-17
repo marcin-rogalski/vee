@@ -28,9 +28,9 @@ Unify persistence across all entities: JSON file storage with in-memory caching 
 
 ### Phase 1: Session entity — add `agentId` field
 
-1. [ ] session-agentid-field — Add `agentId: string` to Session domain type, update SessionCreateUseCase to accept agentId, update InMemorySessionRepository.create(), update all tests
-2. [ ] session-agentid-http — Update HTTP Infer.adapter to pass agentId when creating sessions (if auto-creating)
-3. [ ] session-agentid-cli — Update CLI screens/commands to pass agentId on session creation
+1. [x] session-agentid-field — Add `agentId: string` to Session domain type, update SessionCreateUseCase to accept agentId, update InMemorySessionRepository.create(), update all tests
+2. [x] session-agentid-http — Update HTTP SessionCreate.adapter to require agentId in request body
+3. [x] session-agentid-cli — Update CLI SessionsCreate.command to require --agent option, update SessionsList to display agentId
 
 ### Phase 2: JSON persistence for Session, Context, ChatMessage
 

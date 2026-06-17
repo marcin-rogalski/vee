@@ -1,12 +1,12 @@
 import type Agent from '@domain/Agent'
 import { useEffect, useState } from 'react'
 
-type Session = { id: string; title: string; name: string }
+type Session = { id: string; title: string; name: string; agentId: string }
 export type AgentItem = Pick<Agent, 'id' | 'name' | 'description'>
 
 type Props = {
 	sessions: {
-		list: () => Promise<Array<{ id: string; name: string }>>
+		list: () => Promise<Array<{ id: string; name: string; agentId: string }>>
 	}
 	agents: {
 		list: () => Promise<Array<AgentItem>>

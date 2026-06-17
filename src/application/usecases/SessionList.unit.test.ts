@@ -11,6 +11,7 @@ describe('UC5 — SessionList use case', () => {
 			get: async () => ({
 				id: 'session-1',
 				name: '',
+				agentId: 'agent-1',
 				createdAt: 0,
 				updatedAt: 0,
 			}),
@@ -18,6 +19,7 @@ describe('UC5 — SessionList use case', () => {
 			create: async () => ({
 				id: 'session-1',
 				name: '',
+				agentId: 'agent-1',
 				createdAt: 0,
 				updatedAt: 0,
 			}),
@@ -27,16 +29,24 @@ describe('UC5 — SessionList use case', () => {
 		useCase = new SessionListUseCase(mockRepository)
 	})
 
-	it('returns array of { id, name } objects', async () => {
+	it('returns array of { id, name, agentId } objects', async () => {
 		vi.spyOn(mockRepository, 'list').mockResolvedValue([
-			{ id: 's1', name: 'Session One' },
-			{ id: 's2', name: 'Session Two' },
+			{ id: 's1', name: 'Session One', agentId: 'agent-1' },
+			{ id: 's2', name: 'Session Two', agentId: 'agent-2' },
 		])
 		const result = await useCase.execute()
 		expect(Array.isArray(result)).toBe(true)
 		expect(result).toHaveLength(2)
-		expect(result[0]).toEqual({ id: 's1', name: 'Session One' })
-		expect(result[1]).toEqual({ id: 's2', name: 'Session Two' })
+		expect(result[0]).toEqual({
+			id: 's1',
+			name: 'Session One',
+			agentId: 'agent-1',
+		})
+		expect(result[1]).toEqual({
+			id: 's2',
+			name: 'Session Two',
+			agentId: 'agent-2',
+		})
 	})
 
 	it('returns empty array when no sessions exist', async () => {

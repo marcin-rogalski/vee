@@ -6,9 +6,9 @@ import { useSessionData } from './hooks/useSessionData'
 
 type Props = {
 	sessions: {
-		list: () => Promise<Array<{ id: string; name: string }>>
+		list: () => Promise<Array<{ id: string; name: string; agentId: string }>>
 	}
-	onCreateSession: (name?: string) => Promise<string>
+	onCreateSession: (name?: string, agentId?: string) => Promise<string>
 	agents: {
 		list: () => Promise<Array<AgentItem>>
 	}
@@ -61,7 +61,10 @@ export function SessionScreen({
 		}
 
 		if (item.value === '__new__') {
-			const sessionId = await onCreateSession('New Session')
+			const sessionId = await onCreateSession(
+				'New Session',
+				selectedAgentId ?? undefined,
+			)
 			onSelectSession(sessionId)
 		} else {
 			onSelectSession(item.value)

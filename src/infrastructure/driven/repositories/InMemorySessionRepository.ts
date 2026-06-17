@@ -36,19 +36,20 @@ class InMemorySessionRepository implements SessionRepositoryPort {
 		return cached.session
 	}
 
-	async list(): Promise<Array<Pick<Session, 'id' | 'name'>>> {
+	async list(): Promise<Array<Pick<Session, 'id' | 'name' | 'agentId'>>> {
 		const now = Date.now()
 		return Array.from(this.sessions.values())
 			.filter((cached) => cached.expiresAt > now)
-			.map(({ session: { id, name } }) => ({ id, name }))
+			.map(({ session: { id, name, agentId } }) => ({ id, name, agentId }))
 	}
 
-	async create(name: string): Promise<Session> {
+	async create(name: string, agentId: string): Promise<Session> {
 		const id = crypto.randomUUID()
 		const now = Date.now()
 		const session: Session = {
 			id,
 			name,
+			agentId,
 			createdAt: now,
 			updatedAt: now,
 		}

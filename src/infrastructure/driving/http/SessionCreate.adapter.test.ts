@@ -28,13 +28,13 @@ describe('SessionCreate', () => {
 		expect(typeof handlers[1]).toBe('function')
 	})
 
-	it('handles optional body — no body sent', async () => {
+	it('handles required body with agentId', async () => {
 		const handlers = endpoint.toHandlers()
 		const dispatchMiddleware = handlers[1] as CallableFunction
 
 		const mockReq = {
 			params: {},
-			body: undefined,
+			body: { name: 'My Session', agentId: 'agent-1' },
 			query: {},
 			on: vi.fn(),
 		} as any
@@ -47,31 +47,7 @@ describe('SessionCreate', () => {
 		const promise = dispatchMiddleware(mockReq, mockRes, next)
 		await promise
 
-		expect(mockUseCase.execute).toHaveBeenCalledWith(undefined)
-		expect(mockRes.status).toHaveBeenCalledWith(200)
-		expect(mockRes.json).toHaveBeenCalledWith({ id: 'session-1' })
-	})
-
-	it('handles optional body — name provided', async () => {
-		const handlers = endpoint.toHandlers()
-		const dispatchMiddleware = handlers[1] as CallableFunction
-
-		const mockReq = {
-			params: {},
-			body: { name: 'My Session' },
-			query: {},
-			on: vi.fn(),
-		} as any
-		const mockRes = {
-			status: vi.fn().mockReturnThis(),
-			json: vi.fn(),
-		} as any
-
-		const next = vi.fn()
-		const promise = dispatchMiddleware(mockReq, mockRes, next)
-		await promise
-
-		expect(mockUseCase.execute).toHaveBeenCalledWith('My Session')
+		expect(mockUseCase.execute).toHaveBeenCalledWith('My Session', 'agent-1')
 		expect(mockRes.status).toHaveBeenCalledWith(200)
 		expect(mockRes.json).toHaveBeenCalledWith({ id: 'session-1' })
 	})
@@ -82,7 +58,7 @@ describe('SessionCreate', () => {
 
 		const mockReq = {
 			params: {},
-			body: {},
+			body: { agentId: 'agent-1' },
 			query: {},
 			on: vi.fn(),
 		} as any

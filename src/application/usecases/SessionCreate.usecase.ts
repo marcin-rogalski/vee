@@ -7,9 +7,12 @@ class SessionCreateUseCase {
 		readonly eventBus: EventBusPort,
 	) {}
 
-	async execute(name?: string): Promise<string> {
+	async execute(name?: string, agentId?: string): Promise<string> {
 		const safeName = typeof name === 'string' ? name : ''
-		const session = await this.sessionRepository.create(safeName)
+		if (!agentId) {
+			throw new Error('agentId is required for session creation')
+		}
+		const session = await this.sessionRepository.create(safeName, agentId)
 
 		this.eventBus.publish({
 			id: crypto.randomUUID(),
@@ -18,6 +21,7 @@ class SessionCreateUseCase {
 			type: 'session-created',
 			sessionId: session.id,
 			name: session.name,
+			agentId: session.agentId,
 		})
 
 		return session.id

@@ -7,6 +7,7 @@ describe('DTO — SessionDto', () => {
 		const session: SessionDto = {
 			id: 'session-123',
 			name: 'Test Session',
+			agentId: 'agent-1',
 			createdAt: 1678867200000,
 			updatedAt: 1678867200000,
 		}
@@ -18,6 +19,7 @@ describe('DTO — SessionDto', () => {
 		const session: SessionDto = {
 			id: 'session-123',
 			name: 'Test Session',
+			agentId: 'agent-1',
 			createdAt: 1678867200000,
 			updatedAt: 1678867200000,
 		}
@@ -30,6 +32,7 @@ describe('DTO — SessionDto', () => {
 		const session: SessionDto = {
 			id: 'session-123',
 			name: 'Test Session',
+			agentId: 'agent-1',
 			createdAt: timestamp,
 			updatedAt: timestamp,
 		}
@@ -43,6 +46,7 @@ describe('DTO — SessionDto', () => {
 		const session: SessionDto = {
 			id: 'session-123',
 			name: 'Test Session',
+			agentId: 'agent-1',
 			createdAt: timestamp,
 			updatedAt: timestamp,
 		}
@@ -56,6 +60,7 @@ describe('DTO — SessionDto', () => {
 		const session: SessionDto = {
 			id: 'session-123',
 			name: 'Test Session',
+			agentId: 'agent-1',
 			createdAt: now,
 			updatedAt: now + 1000,
 		}
@@ -70,6 +75,7 @@ describe('DTO — SessionDto', () => {
 		const session: SessionDto = {
 			id: 'session-123',
 			name: 'Test Session',
+			agentId: 'agent-1',
 			createdAt: now,
 			updatedAt: now,
 		}
@@ -82,6 +88,7 @@ describe('DTO — SessionDto', () => {
 		const session: SessionDto = {
 			id: 'session-123',
 			name: 'Test Session',
+			agentId: 'agent-1',
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
 		}
@@ -91,14 +98,16 @@ describe('DTO — SessionDto', () => {
 })
 
 describe('DTO — ChatSessionSummaryDto', () => {
-	it('has only id and name fields', () => {
+	it('has only id, name, and agentId fields', () => {
 		const summary: ChatSessionSummaryDto = {
 			id: 'session-123',
 			name: 'Test Session',
+			agentId: 'agent-1',
 		}
 
 		expect(summary.id).toBe('session-123')
 		expect(summary.name).toBe('Test Session')
+		expect(summary.agentId).toBe('agent-1')
 
 		// Verify that other fields are not included
 		// @ts-expect-error - createdAt should not exist
@@ -112,14 +121,16 @@ describe('DTO — ChatSessionSummaryDto', () => {
 		const session: SessionDto = {
 			id: 'session-123',
 			name: 'Test Session',
+			agentId: 'agent-1',
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
 		}
 
-		// Pick only id and name
+		// Pick only id, name, and agentId
 		const summary: ChatSessionSummaryDto = {
 			id: session.id,
 			name: session.name,
+			agentId: session.agentId,
 		}
 
 		expect(summary.id).toBe(session.id)
@@ -130,6 +141,7 @@ describe('DTO — ChatSessionSummaryDto', () => {
 		const summary: ChatSessionSummaryDto = {
 			id: 'session-123',
 			name: 'Test Session',
+			agentId: 'agent-1',
 		}
 
 		expect(summary).toBeDefined()

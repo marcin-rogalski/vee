@@ -14,6 +14,7 @@ describe('UC6 — SessionDelete use case', () => {
 			get: async () => ({
 				id: 'session-1',
 				name: '',
+				agentId: 'agent-1',
 				createdAt: 0,
 				updatedAt: 0,
 			}),
@@ -21,6 +22,7 @@ describe('UC6 — SessionDelete use case', () => {
 			create: async () => ({
 				id: 'session-1',
 				name: '',
+				agentId: 'agent-1',
 				createdAt: 0,
 				updatedAt: 0,
 			}),

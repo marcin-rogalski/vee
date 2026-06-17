@@ -28,7 +28,13 @@ export type Envelope = {
 	| { role: 'system'; type: 'error'; message: string }
 
 	// Session CRUD events
-	| { role: 'system'; type: 'session-created'; sessionId: string; name: string }
+	| {
+			role: 'system'
+			type: 'session-created'
+			sessionId: string
+			name: string
+			agentId: string
+	  }
 	| { role: 'system'; type: 'session-deleted'; sessionId: string }
 
 	// Provider CRUD events

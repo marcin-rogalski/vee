@@ -7,11 +7,13 @@ const SessionCreate = (useCase: SessionCreateUseCase) =>
 		'POST',
 		'/sessions',
 		{
-			body: z.object({ name: z.string().optional() }).optional(),
+			body: z
+				.object({ name: z.string().optional(), agentId: z.string() })
+				.optional(),
 			response: z.object({ id: z.string() }),
 		},
 		async (_params, body) => {
-			const id = await useCase.execute(body?.name)
+			const id = await useCase.execute(body?.name, body?.agentId)
 			return { id }
 		},
 	)
