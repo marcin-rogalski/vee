@@ -21,6 +21,9 @@ import SessionListUseCase from '@application/usecases/SessionList.usecase'
 import OpenAIProvider from '@infrastructure/driven/providers/OpenAIProvider'
 import DefaultProviderRegistry from '@infrastructure/driven/registries/DefaultProviderRegistry'
 import ToolRegistry from '@infrastructure/driven/registries/ToolRegistry'
+import CachedChatMessageRepository from '@infrastructure/driven/repositories/cache/CachedChatMessageRepository'
+import CachedContextRepository from '@infrastructure/driven/repositories/cache/CachedContextRepository'
+import CachedSessionRepository from '@infrastructure/driven/repositories/cache/CachedSessionRepository'
 import JsonAgentRepository from '@infrastructure/driven/repositories/JsonAgentRepository'
 import JsonChatMessageRepository from '@infrastructure/driven/repositories/JsonChatMessageRepository'
 import JsonContextRepository from '@infrastructure/driven/repositories/JsonContextRepository'
@@ -61,10 +64,21 @@ const agentRepository = new JsonAgentRepository(env.agentRepositoryPath)
 const providerRepository = new JsonProviderRepository(
 	env.integrationRepositoryPath,
 )
-const sessionRepository = new JsonSessionRepository(env.sessionRepositoryPath)
-const contextRepository = new JsonContextRepository(env.contextRepositoryPath)
-const chatMessageRepository = new JsonChatMessageRepository(
-	env.chatMessageRepositoryPath,
+
+// Cache TTL: 10 minutes (600_000 ms) — matches original session TTL
+const CACHE_TTL = 600_000
+
+const sessionRepository = new CachedSessionRepository(
+	new JsonSessionRepository(env.sessionRepositoryPath),
+	CACHE_TTL,
+)
+const contextRepository = new CachedContextRepository(
+	new JsonContextRepository(env.contextRepositoryPath),
+	CACHE_TTL,
+)
+const chatMessageRepository = new CachedChatMessageRepository(
+	new JsonChatMessageRepository(env.chatMessageRepositoryPath),
+	CACHE_TTL,
 )
 const toolRegistry = new ToolRegistry()
 const providerRegistry = new DefaultProviderRegistry()
