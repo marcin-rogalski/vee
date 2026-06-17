@@ -30,8 +30,8 @@ Decompose `InferUseCase` into an orchestrator + phase use cases + services, foll
 
 ### Phase 2 — Context Service
 
-5. [ ] context-service — Implement `ContextService` (build, append, compact) wrapping `ContextRepositoryPort`
-6. [ ] context-service-tests — Add unit tests for context service
+5. [x] context-service — Implement `ContextService` (build, append, compact) wrapping `ContextRepositoryPort`
+6. [x] context-service-tests — Add unit tests for context service
 
 ### Phase 3 — Build Context Use Case
 
