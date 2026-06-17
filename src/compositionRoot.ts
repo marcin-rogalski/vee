@@ -65,20 +65,17 @@ const providerRepository = new JsonProviderRepository(
 	env.integrationRepositoryPath,
 )
 
-// Cache TTL: 10 minutes (600_000 ms) — matches original session TTL
-const CACHE_TTL = 600_000
-
 const sessionRepository = new CachedSessionRepository(
 	new JsonSessionRepository(env.sessionRepositoryPath),
-	CACHE_TTL,
+	env.cacheTtl,
 )
 const contextRepository = new CachedContextRepository(
 	new JsonContextRepository(env.contextRepositoryPath),
-	CACHE_TTL,
+	env.cacheTtl,
 )
 const chatMessageRepository = new CachedChatMessageRepository(
 	new JsonChatMessageRepository(env.chatMessageRepositoryPath),
-	CACHE_TTL,
+	env.cacheTtl,
 )
 const toolRegistry = new ToolRegistry()
 const providerRegistry = new DefaultProviderRegistry()

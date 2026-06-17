@@ -20,6 +20,9 @@ class NodeEnvironment {
 
 		// ports
 		SEVER_PORT: z.coerce.number().default(3000),
+
+		// cache
+		CACHE_TTL: z.coerce.number().default(3600000),
 	})
 
 	public readonly mode: 'development' | 'production' | 'test'
@@ -34,6 +37,9 @@ class NodeEnvironment {
 
 	//ports
 	public readonly serverPort: number
+
+	// cache
+	public readonly cacheTtl: number
 
 	constructor(private readonly logger: LoggerPort) {
 		const env = NodeEnvironment.schema.parse(process.env)
@@ -66,6 +72,9 @@ class NodeEnvironment {
 		// ports
 		this.serverPort = env.SEVER_PORT
 
+		// cache
+		this.cacheTtl = env.CACHE_TTL
+
 		this.logger.info('Environment loaded', {
 			mode: this.mode,
 			configFolderPath: this.configFolderPath,
@@ -75,6 +84,7 @@ class NodeEnvironment {
 			contextRepositoryPath: this.contextRepositoryPath,
 			chatMessageRepositoryPath: this.chatMessageRepositoryPath,
 			serverPort: env.SEVER_PORT,
+			cacheTtl: this.cacheTtl,
 		})
 	}
 }
