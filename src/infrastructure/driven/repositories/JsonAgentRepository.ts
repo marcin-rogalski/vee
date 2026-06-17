@@ -11,6 +11,19 @@ class JsonAgentRepository
 		super(filePath, 'Agent', NotFoundError)
 	}
 
+	protected validateItem(item: unknown): boolean {
+		if (typeof item !== 'object' || item === null) {
+			return false
+		}
+		const obj = item as Record<string, unknown>
+		return (
+			typeof obj.id === 'string' &&
+			typeof obj.name === 'string' &&
+			typeof obj.systemPrompt === 'string' &&
+			typeof obj.providerId === 'string'
+		)
+	}
+
 	async get(id: string): Promise<Agent> {
 		const agents = await this.read()
 		const agent = agents.find((a) => a.id === id)

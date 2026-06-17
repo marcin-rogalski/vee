@@ -9,7 +9,14 @@ class JsonChatMessageRepository implements ChatMessageRepositoryPort {
 	protected async read(): Promise<Array<ChatMessage>> {
 		try {
 			const raw = await readFile(this.filePath, 'utf-8')
-			return JSON.parse(raw)
+			const items: unknown[] = JSON.parse(raw)
+			return items.filter((item) => {
+				if (this.isValidMessage(item as ChatMessage)) {
+					return true
+				}
+				console.warn('[ChatMessage] Invalid item filtered:', item)
+				return false
+			}) as Array<ChatMessage>
 		} catch (error) {
 			if (
 				error instanceof Error &&
@@ -20,6 +27,20 @@ class JsonChatMessageRepository implements ChatMessageRepositoryPort {
 			}
 			throw error
 		}
+	}
+
+	private isValidMessage(item: unknown): boolean {
+		if (typeof item !== 'object' || item === null) {
+			return false
+		}
+		const obj = item as Record<string, unknown>
+		return (
+			typeof obj.id === 'string' &&
+			typeof obj.sessionId === 'string' &&
+			typeof obj.role === 'string' &&
+			typeof obj.content === 'string' &&
+			typeof obj.ts === 'number'
+		)
 	}
 
 	protected async write(messages: Array<ChatMessage>): Promise<void> {

@@ -13,7 +13,17 @@ abstract class JsonFileRepository<T> {
 	protected async read(): Promise<T[]> {
 		try {
 			const raw = await readFile(this.filePath, 'utf-8')
-			return JSON.parse(raw)
+			const items: unknown[] = JSON.parse(raw)
+			return items.filter((item) => {
+				if (this.validateItem(item as T)) {
+					return true
+				}
+				console.warn(
+					`[${this.entityName}] Invalid item filtered from ${this.filePath}:`,
+					item,
+				)
+				return false
+			}) as T[]
 		} catch (error) {
 			if (
 				error instanceof Error &&
@@ -24,6 +34,10 @@ abstract class JsonFileRepository<T> {
 			}
 			throw error
 		}
+	}
+
+	protected validateItem(_item: T): boolean {
+		return true
 	}
 
 	protected async write(items: T[]): Promise<void> {

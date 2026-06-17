@@ -10,7 +10,14 @@ class JsonSessionRepository implements SessionRepositoryPort {
 	protected async read(): Promise<Session[]> {
 		try {
 			const raw = await readFile(this.filePath, 'utf-8')
-			return JSON.parse(raw)
+			const items: unknown[] = JSON.parse(raw)
+			return items.filter((item) => {
+				if (this.isValidSession(item as Session)) {
+					return true
+				}
+				console.warn('[Session] Invalid item filtered:', item)
+				return false
+			}) as Session[]
 		} catch (error) {
 			if (
 				error instanceof Error &&
@@ -21,6 +28,19 @@ class JsonSessionRepository implements SessionRepositoryPort {
 			}
 			throw error
 		}
+	}
+
+	private isValidSession(item: unknown): boolean {
+		if (typeof item !== 'object' || item === null) {
+			return false
+		}
+		const obj = item as Record<string, unknown>
+		return (
+			typeof obj.id === 'string' &&
+			typeof obj.name === 'string' &&
+			typeof obj.agentId === 'string' &&
+			typeof obj.createdAt === 'number'
+		)
 	}
 
 	protected async write(items: Session[]): Promise<void> {

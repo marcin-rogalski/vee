@@ -11,6 +11,22 @@ class JsonProviderRepository
 		super(filePath, 'Provider', NotFoundError)
 	}
 
+	protected validateItem(item: unknown): boolean {
+		if (typeof item !== 'object' || item === null) {
+			return false
+		}
+		const obj = item as Record<string, unknown>
+		return (
+			typeof obj.id === 'string' &&
+			typeof obj.name === 'string' &&
+			typeof obj.type === 'string' &&
+			typeof obj.configSchema === 'object' &&
+			obj.configSchema !== null &&
+			typeof obj.config === 'object' &&
+			obj.config !== null
+		)
+	}
+
 	async get(id: string): Promise<Provider> {
 		const providers = await this.read()
 		const provider = providers.find((p) => p.id === id)

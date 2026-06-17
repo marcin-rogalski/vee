@@ -11,7 +11,35 @@ class JsonContextRepository implements ContextRepositoryPort {
 	protected async readContexts(): Promise<ContextStore> {
 		try {
 			const raw = await readFile(this.filePath, 'utf-8')
-			return JSON.parse(raw)
+			const rawContexts: unknown = JSON.parse(raw)
+			if (typeof rawContexts !== 'object' || rawContexts === null) {
+				return {}
+			}
+			const contexts: ContextStore = {}
+			for (const [sessionId, entries] of Object.entries(
+				rawContexts as Record<string, unknown>,
+			)) {
+				if (!Array.isArray(entries)) {
+					continue
+				}
+				const validEntries = entries.filter(
+					(e) =>
+						typeof e === 'object' &&
+						e !== null &&
+						'id' in e &&
+						typeof (e as Record<string, unknown>).id === 'string' &&
+						'ts' in e &&
+						typeof (e as Record<string, unknown>).ts === 'number' &&
+						'role' in e &&
+						typeof (e as Record<string, unknown>).role === 'string' &&
+						'content' in e &&
+						typeof (e as Record<string, unknown>).content === 'string',
+				)
+				if (validEntries.length > 0) {
+					contexts[sessionId] = validEntries as ConversationEntry[]
+				}
+			}
+			return contexts
 		} catch (error) {
 			if (
 				error instanceof Error &&
