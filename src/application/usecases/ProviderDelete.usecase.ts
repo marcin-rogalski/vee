@@ -1,7 +1,6 @@
 import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
 import type EventBusPort from '@application/ports/EventBus.port'
 import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
-import { ConflictError } from '@domain/errors'
 
 class ProviderDeleteUseCase {
 	constructor(
@@ -12,12 +11,8 @@ class ProviderDeleteUseCase {
 
 	async execute(id: string): Promise<void> {
 		const agents = await this.agentRepository.listByProviderId(id)
-		if (agents.length > 0) {
-			const agentNames = agents.map((a) => a.name).join(', ')
-			throw new ConflictError(
-				`Cannot delete provider: referenced by agent(s): ${agentNames}`,
-				{ agentIds: agents.map((a) => a.id) },
-			)
+		for (const agent of agents) {
+			await this.agentRepository.delete(agent.id)
 		}
 		await this.providerRepository.delete(id)
 		this.eventBus.publish({

@@ -68,6 +68,17 @@ describe('UC9 — ProviderDelete use case', () => {
 		expect(deleteSpy).toHaveBeenCalledWith('p1')
 	})
 
+	it('cascades delete to agents belonging to provider', async () => {
+		vi.spyOn(mockAgentRepository, 'listByProviderId').mockResolvedValue([
+			{ id: 'a1', name: 'Agent 1' },
+			{ id: 'a2', name: 'Agent 2' },
+		])
+		const agentDeleteSpy = vi.spyOn(mockAgentRepository, 'delete')
+		await useCase.execute('p1')
+		expect(agentDeleteSpy).toHaveBeenCalledWith('a1')
+		expect(agentDeleteSpy).toHaveBeenCalledWith('a2')
+	})
+
 	it('publishes a provider-deleted event', async () => {
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
 		await useCase.execute('p1')
@@ -182,28 +193,24 @@ describe('UC9 — ProviderDelete use case', () => {
 		expect(envelope.role).toBe('system')
 	})
 
-	it('throws when provider is referenced by agents (cascade safety)', async () => {
-		const deleteSpy = vi.spyOn(mockRepository, 'delete')
+	it('cascades delete to agents when provider is referenced', async () => {
 		vi.mocked(mockAgentRepository.listByProviderId).mockResolvedValueOnce([
 			{ id: 'a1', name: 'Agent One' },
 			{ id: 'a2', name: 'Agent Two' },
 		])
-		await expect(useCase.execute('p1')).rejects.toThrow(
-			'referenced by agent(s)',
-		)
-		expect(deleteSpy).not.toHaveBeenCalled()
+		const agentDeleteSpy = vi.spyOn(mockAgentRepository, 'delete')
+		await useCase.execute('p1')
+		expect(agentDeleteSpy).toHaveBeenCalledWith('a1')
+		expect(agentDeleteSpy).toHaveBeenCalledWith('a2')
 	})
 
-	it('includes agent names in cascade safety error message', async () => {
+	it('deletes provider after cascading agent deletes', async () => {
 		vi.mocked(mockAgentRepository.listByProviderId).mockResolvedValueOnce([
 			{ id: 'a1', name: 'MyAgent' },
 		])
-		try {
-			await useCase.execute('p1')
-			expect.fail('should have thrown')
-		} catch (error) {
-			expect((error as Error).message).toContain('MyAgent')
-		}
+		const providerDeleteSpy = vi.spyOn(mockRepository, 'delete')
+		await useCase.execute('p1')
+		expect(providerDeleteSpy).toHaveBeenCalledWith('p1')
 	})
 
 	it('allows delete when no agents reference the provider', async () => {

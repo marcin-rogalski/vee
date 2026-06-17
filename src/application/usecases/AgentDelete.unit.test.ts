@@ -1,6 +1,7 @@
 import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
 import type EventBusPort from '@application/ports/EventBus.port'
 import type { Envelope } from '@application/ports/EventBus.port'
+import type SessionRepositoryPort from '@application/ports/SessionRepository.port'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AgentDeleteUseCase from './AgentDelete.usecase'
 
@@ -8,6 +9,7 @@ type EnvelopeGenerator = AsyncGenerator<Envelope> & { unsubscribe: () => void }
 
 describe('UC1 — AgentDelete use case', () => {
 	let mockRepository: AgentRepositoryPort
+	let mockSessionRepository: SessionRepositoryPort
 	let mockEventBus: EventBusPort
 	let useCase: AgentDeleteUseCase
 
@@ -26,6 +28,25 @@ describe('UC1 — AgentDelete use case', () => {
 			save: async () => {},
 			delete: async () => {},
 		}
+		mockSessionRepository = {
+			get: async () => ({
+				id: 'session-1',
+				name: '',
+				agentId: 'agent-1',
+				createdAt: 0,
+				updatedAt: 0,
+			}),
+			list: async () => [],
+			create: async () => ({
+				id: 'session-1',
+				name: '',
+				agentId: 'agent-1',
+				createdAt: 0,
+				updatedAt: 0,
+			}),
+			setName: async () => {},
+			delete: async () => {},
+		}
 		mockEventBus = {
 			publish: vi.fn(),
 			subscribe: vi.fn().mockReturnValue({
@@ -36,7 +57,11 @@ describe('UC1 — AgentDelete use case', () => {
 				unsubscribe: vi.fn(),
 			} as unknown as EnvelopeGenerator),
 		}
-		useCase = new AgentDeleteUseCase(mockRepository, mockEventBus)
+		useCase = new AgentDeleteUseCase(
+			mockRepository,
+			mockSessionRepository,
+			mockEventBus,
+		)
 	})
 
 	it('calls agentRepository.delete(id) with correct id', async () => {

@@ -1,3 +1,5 @@
+import type ChatMessageRepositoryPort from '@application/ports/ChatMessageRepository.port'
+import type ContextRepositoryPort from '@application/ports/ContextRepository.port'
 import type EventBusPort from '@application/ports/EventBus.port'
 import type { Envelope } from '@application/ports/EventBus.port'
 import type SessionRepositoryPort from '@application/ports/SessionRepository.port'
@@ -6,6 +8,8 @@ import SessionDeleteUseCase from './SessionDelete.usecase'
 
 describe('UC6 — SessionDelete use case', () => {
 	let mockRepository: SessionRepositoryPort
+	let mockContextRepository: ContextRepositoryPort
+	let mockChatMessageRepository: ChatMessageRepositoryPort
 	let mockEventBus: EventBusPort
 	let useCase: SessionDeleteUseCase
 
@@ -29,6 +33,17 @@ describe('UC6 — SessionDelete use case', () => {
 			setName: async () => {},
 			delete: async () => {},
 		}
+		mockContextRepository = {
+			get: async () => [],
+			append: async () => {},
+			update: async () => {},
+			delete: async () => {},
+		}
+		mockChatMessageRepository = {
+			getBySession: async () => [],
+			create: async () => {},
+			deleteBySession: async () => {},
+		}
 		mockEventBus = {
 			publish: vi.fn(),
 			subscribe: vi.fn().mockReturnValue({
@@ -43,7 +58,12 @@ describe('UC6 — SessionDelete use case', () => {
 				unsubscribe: () => void
 			}),
 		}
-		useCase = new SessionDeleteUseCase(mockRepository, mockEventBus)
+		useCase = new SessionDeleteUseCase(
+			mockRepository,
+			mockContextRepository,
+			mockChatMessageRepository,
+			mockEventBus,
+		)
 	})
 
 	it('calls sessionRepository.delete(id) with correct id', async () => {

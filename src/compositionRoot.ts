@@ -111,7 +111,11 @@ const compositionRoot: CompositionRoot = {
 		eventBus,
 	),
 	agentList: new AgentListUseCase(agentRepository),
-	agentDelete: new AgentDeleteUseCase(agentRepository, eventBus),
+	agentDelete: new AgentDeleteUseCase(
+		agentRepository,
+		sessionRepository,
+		eventBus,
+	),
 	providerUpsert: new ProviderUpsertUseCase(providerRepository, eventBus),
 	providerList: new ProviderListUseCase(providerRepository),
 	providerDelete: new ProviderDeleteUseCase(
@@ -121,7 +125,12 @@ const compositionRoot: CompositionRoot = {
 	),
 	sessionCreate: new SessionCreateUseCase(sessionRepository, eventBus),
 	sessionList: new SessionListUseCase(sessionRepository),
-	sessionDelete: new SessionDeleteUseCase(sessionRepository, eventBus),
+	sessionDelete: new SessionDeleteUseCase(
+		sessionRepository,
+		contextRepository,
+		chatMessageRepository,
+		eventBus,
+	),
 	infer: new InferOrchestratorUseCase(
 		agentRepository,
 		providerRepository,
