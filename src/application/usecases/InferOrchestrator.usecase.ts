@@ -1,15 +1,16 @@
 import type ConversationEntry from '@domain/ConversationEntry'
 import type AgentRepositoryPort from '../ports/AgentRepository.port'
+import type ChatMessageService from '../ports/ChatMessageService.port'
+import type ContextService from '../ports/ContextService.port'
 import type EventBusPort from '../ports/EventBus.port'
+import type ProviderPort from '../ports/Provider.port'
 import type ProviderRegistryPort from '../ports/ProviderRegistry.port'
 import type ProviderRepositoryPort from '../ports/ProviderRepository.port'
 import type ToolPort from '../ports/Tool.port'
-import type ToolRegistryPort from '../ports/ToolRgistry.port'
-import type ChatMessageService from '../services/ChatMessageService.port'
-import type ContextService from '../services/ContextService.port'
+import type ToolRegistryPort from '../ports/ToolRegistry.port'
 import type BuildContextUseCase from './BuildContext.usecase'
-import ExecuteToolsUseCase from './ExecuteTools.usecase'
-import InferTurnUseCase from './InferTurn.usecase'
+import type ExecuteToolsUseCase from './ExecuteTools.usecase'
+import type InferTurnUseCase from './InferTurn.usecase'
 
 /** Orchestrator that owns the inference loop.
  *
@@ -33,6 +34,10 @@ class InferOrchestratorUseCase {
 		readonly chatMessageService: ChatMessageService,
 		readonly eventBus: EventBusPort,
 		readonly buildContextUseCase: BuildContextUseCase,
+		readonly executeToolsUseCase: ExecuteToolsUseCase,
+		readonly createInferTurnUseCase: (
+			provider: ProviderPort,
+		) => InferTurnUseCase,
 	) {}
 
 	async execute(
@@ -57,9 +62,8 @@ class InferOrchestratorUseCase {
 			...agent.providerOverrides,
 		}
 
-		// Create sub-use cases with resolved provider (provider is runtime-dependent)
-		const inferTurnUseCase = new InferTurnUseCase(provider)
-		const executeToolsUseCase = new ExecuteToolsUseCase()
+		// Create infer turn use case with resolved provider (provider is runtime-dependent)
+		const inferTurnUseCase = this.createInferTurnUseCase(provider)
 
 		// --- Persist user prompt ---
 		const userEntry: ConversationEntry = {
@@ -131,11 +135,10 @@ class InferOrchestratorUseCase {
 				})
 
 				// Execute tools and persist results
-				const toolResults = await executeToolsUseCase.execute(
+				const toolResults = await this.executeToolsUseCase.execute(
 					result.toolCalls,
 					toolMap,
 				)
-
 				for (const toolEntry of toolResults) {
 					await this.contextService.append(sessionId, toolEntry)
 					const systemEntry = toolEntry as {

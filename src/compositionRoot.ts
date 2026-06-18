@@ -6,12 +6,14 @@ import type LoggerPort from '@application/ports/Logger.port'
 import type ProviderRegistryPort from '@application/ports/ProviderRegistry.port'
 import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
 import type SessionRepositoryPort from '@application/ports/SessionRepository.port'
-import type ToolRegistryPort from '@application/ports/ToolRgistry.port'
+import type ToolRegistryPort from '@application/ports/ToolRegistry.port'
 import AgentDeleteUseCase from '@application/usecases/AgentDelete.usecase'
 import AgentListUseCase from '@application/usecases/AgentList.usecase'
 import AgentUpsertUseCase from '@application/usecases/AgentUpsert.usecase'
 import BuildContextUseCase from '@application/usecases/BuildContext.usecase'
+import ExecuteToolsUseCase from '@application/usecases/ExecuteTools.usecase'
 import InferOrchestratorUseCase from '@application/usecases/InferOrchestrator.usecase'
+import InferTurnUseCase from '@application/usecases/InferTurn.usecase'
 import ProviderDeleteUseCase from '@application/usecases/ProviderDelete.usecase'
 import ProviderListUseCase from '@application/usecases/ProviderList.usecase'
 import ProviderUpsertUseCase from '@application/usecases/ProviderUpsert.usecase'
@@ -19,7 +21,7 @@ import SessionCreateUseCase from '@application/usecases/SessionCreate.usecase'
 import SessionDeleteUseCase from '@application/usecases/SessionDelete.usecase'
 import SessionListUseCase from '@application/usecases/SessionList.usecase'
 import OpenAIProvider from '@infrastructure/driven/providers/OpenAIProvider'
-import DefaultProviderRegistry from '@infrastructure/driven/registries/DefaultProviderRegistry'
+import ProviderRegistry from '@infrastructure/driven/registries/ProviderRegistry'
 import ToolRegistry from '@infrastructure/driven/registries/ToolRegistry'
 import CachedChatMessageRepository from '@infrastructure/driven/repositories/cache/CachedChatMessageRepository'
 import CachedContextRepository from '@infrastructure/driven/repositories/cache/CachedContextRepository'
@@ -78,7 +80,7 @@ const chatMessageRepository = new CachedChatMessageRepository(
 	env.cacheTtl,
 )
 const toolRegistry = new ToolRegistry()
-const providerRegistry = new DefaultProviderRegistry()
+const providerRegistry = new ProviderRegistry()
 providerRegistry.register(
 	'openai',
 	() => new OpenAIProvider('openai-default'),
@@ -137,6 +139,8 @@ const compositionRoot: CompositionRoot = {
 		chatMessageService,
 		eventBus,
 		buildContextUseCase,
+		new ExecuteToolsUseCase(),
+		(provider) => new InferTurnUseCase(provider),
 	),
 }
 

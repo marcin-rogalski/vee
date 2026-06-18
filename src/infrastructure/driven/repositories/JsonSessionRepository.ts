@@ -1,36 +1,17 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
 import type SessionRepositoryPort from '@application/ports/SessionRepository.port'
 import { NotFoundError } from '@domain/errors'
 import type Session from '@domain/Session'
+import JsonFileRepository from './JsonFileRepository'
 
-class JsonSessionRepository implements SessionRepositoryPort {
-	constructor(protected readonly filePath: string) {}
-
-	protected async read(): Promise<Session[]> {
-		try {
-			const raw = await readFile(this.filePath, 'utf-8')
-			const items: unknown[] = JSON.parse(raw)
-			return items.filter((item) => {
-				if (this.isValidSession(item as Session)) {
-					return true
-				}
-				console.warn('[Session] Invalid item filtered:', item)
-				return false
-			}) as Session[]
-		} catch (error) {
-			if (
-				error instanceof Error &&
-				'code' in error &&
-				error.code === 'ENOENT'
-			) {
-				return []
-			}
-			throw error
-		}
+class JsonSessionRepository
+	extends JsonFileRepository<Session, Pick<Session, 'id' | 'name' | 'agentId'>>
+	implements SessionRepositoryPort
+{
+	constructor(filePath: string) {
+		super(filePath, 'Session', NotFoundError)
 	}
 
-	private isValidSession(item: unknown): boolean {
+	validateItem(item: unknown): boolean {
 		if (typeof item !== 'object' || item === null) {
 			return false
 		}
@@ -41,11 +22,6 @@ class JsonSessionRepository implements SessionRepositoryPort {
 			typeof obj.agentId === 'string' &&
 			typeof obj.createdAt === 'number'
 		)
-	}
-
-	protected async write(items: Session[]): Promise<void> {
-		await mkdir(dirname(this.filePath), { recursive: true })
-		await writeFile(this.filePath, JSON.stringify(items, null, 2), 'utf-8')
 	}
 
 	async get(id: string): Promise<Session> {
@@ -97,6 +73,17 @@ class JsonSessionRepository implements SessionRepositoryPort {
 		const sessions = await this.read()
 		const filtered = sessions.filter((s) => s.id !== id)
 		await this.write(filtered)
+	}
+
+	async save(session: Session): Promise<void> {
+		const sessions = await this.read()
+		const existing = sessions.find((s) => s.id === session.id)
+		if (existing) {
+			Object.assign(existing, session)
+		} else {
+			sessions.push(session)
+		}
+		await this.write(sessions)
 	}
 }
 

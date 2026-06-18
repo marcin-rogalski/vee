@@ -1,6 +1,6 @@
 import type Agent from '@domain/Agent'
 import type ConversationEntry from '@domain/ConversationEntry'
-import type ContextService from '../services/ContextService.port'
+import type ContextService from '../ports/ContextService.port'
 
 /** Build context for inference: system prompt + conversation history.
  *

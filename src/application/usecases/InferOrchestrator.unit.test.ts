@@ -1,11 +1,11 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: test mocks require any casts */
 import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
+import type ChatMessageService from '@application/ports/ChatMessageService.port'
+import type ContextService from '@application/ports/ContextService.port'
 import type EventBusPort from '@application/ports/EventBus.port'
 import type ProviderRegistryPort from '@application/ports/ProviderRegistry.port'
 import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
-import type ToolRegistryPort from '@application/ports/ToolRgistry.port'
-import type ChatMessageService from '@application/services/ChatMessageService.port'
-import type ContextService from '@application/services/ContextService.port'
+import type ToolRegistryPort from '@application/ports/ToolRegistry.port'
 import type Agent from '@domain/Agent'
 import type Provider from '@domain/Provider'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -122,6 +122,8 @@ beforeEach(() => {
 		mockChatMessageService,
 		mockEventBus,
 		mockBuildContextUseCase,
+		{ execute: mockExecuteToolsExecute } as any,
+		() => ({ execute: mockInferTurnExecute }) as any,
 	)
 })
 

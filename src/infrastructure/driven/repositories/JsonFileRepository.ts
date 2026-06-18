@@ -3,7 +3,7 @@ import { dirname } from 'node:path'
 
 type NotFoundCtor = new (entity: string, id: string) => Error
 
-abstract class JsonFileRepository<T> {
+abstract class JsonFileRepository<T, ListResult = Pick<T, keyof T>> {
 	constructor(
 		protected readonly filePath: string,
 		protected readonly entityName: string,
@@ -15,7 +15,7 @@ abstract class JsonFileRepository<T> {
 			const raw = await readFile(this.filePath, 'utf-8')
 			const items: unknown[] = JSON.parse(raw)
 			return items.filter((item) => {
-				if (this.validateItem(item as T)) {
+				if (this.validateItem(item)) {
 					return true
 				}
 				console.warn(
@@ -36,7 +36,7 @@ abstract class JsonFileRepository<T> {
 		}
 	}
 
-	protected validateItem(_item: T): boolean {
+	protected validateItem(_item: unknown): boolean {
 		return true
 	}
 
@@ -46,7 +46,7 @@ abstract class JsonFileRepository<T> {
 	}
 
 	abstract get(id: string): Promise<T>
-	abstract list(): Promise<unknown>
+	abstract list(): Promise<Array<ListResult>>
 	abstract save(item: T): Promise<void>
 	abstract delete(id: string): Promise<void>
 }

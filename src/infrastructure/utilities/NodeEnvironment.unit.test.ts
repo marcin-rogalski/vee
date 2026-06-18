@@ -108,7 +108,7 @@ describe('U2 — NodeEnvironment', () => {
 
 		// Set defaults explicitly
 		process.env.NODE_ENV = 'development'
-		process.env.SERVER_PORT = '3000'
+		;(process.env as Record<string, string>).SERVER_PORT = '3000'
 		process.env.CONFIG_FOLDER = join(homedir(), '.vee')
 		process.env.AGENT_REPOSITORY_FILE = 'agents.json'
 		process.env.PROVIDER_REPOSITORY_FILE = 'integrations.json'
@@ -128,7 +128,7 @@ describe('U2 — NodeEnvironment', () => {
 	it('parses custom environment values', () => {
 		// Set custom env vars
 		process.env.NODE_ENV = 'production'
-		process.env.SERVER_PORT = '8080'
+		;(process.env as Record<string, string>).SERVER_PORT = '8080'
 		process.env.CONFIG_FOLDER = '/custom/path'
 
 		const env = new NodeEnvironment(mockLogger)
@@ -179,7 +179,7 @@ describe('U2 — NodeEnvironment', () => {
 			delete process.env[key]
 		})
 		process.env.NODE_ENV = 'development'
-		process.env.SERVER_PORT = '3000'
+		;(process.env as Record<string, string>).SERVER_PORT = '3000'
 		process.env.CONFIG_FOLDER = join(homedir(), '.vee')
 		process.env.AGENT_REPOSITORY_FILE = 'agents.json'
 		process.env.PROVIDER_REPOSITORY_FILE = 'integrations.json'
@@ -201,7 +201,7 @@ describe('U2 — NodeEnvironment', () => {
 
 	it('handles port coercion', () => {
 		// Port as string should be coerced to number
-		process.env.SERVER_PORT = '9000'
+		;(process.env as Record<string, string>).SERVER_PORT = '9000'
 
 		const env = new NodeEnvironment(mockLogger)
 
@@ -211,7 +211,7 @@ describe('U2 — NodeEnvironment', () => {
 
 	it('validates port is number', () => {
 		// Invalid port should throw
-		process.env.SERVER_PORT = 'not-a-number'
+		;(process.env as Record<string, string>).SERVER_PORT = 'not-a-number'
 
 		expect(() => {
 			new NodeEnvironment(mockLogger)
@@ -220,7 +220,7 @@ describe('U2 — NodeEnvironment', () => {
 
 	it('handles all environment fields', () => {
 		process.env.NODE_ENV = 'test'
-		process.env.SERVER_PORT = '4000'
+		;(process.env as Record<string, string>).SERVER_PORT = '4000'
 		process.env.CONFIG_FOLDER = '/tmp/test-env'
 		process.env.AGENT_REPOSITORY_FILE = 'agents-test.json'
 		process.env.PROVIDER_REPOSITORY_FILE = 'integrations-test.json'
@@ -245,7 +245,7 @@ describe('U2 — NodeEnvironment', () => {
 
 		// Set minimal required env vars with defaults
 		process.env.NODE_ENV = 'development'
-		process.env.SERVER_PORT = '3000'
+		;(process.env as Record<string, string>).SERVER_PORT = '3000'
 
 		const env = new NodeEnvironment(mockLogger)
 

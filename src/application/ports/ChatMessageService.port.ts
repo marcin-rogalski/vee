@@ -1,4 +1,4 @@
-import type { ChatMessage } from '../ports/ChatMessageRepository.port'
+import type { ChatMessage } from './ChatMessageRepository.port'
 
 /** Service for chat message persistence (append-only, UI display). */
 interface ChatMessageService {

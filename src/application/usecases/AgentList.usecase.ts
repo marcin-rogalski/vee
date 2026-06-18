@@ -1,4 +1,5 @@
 import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
+import type Agent from '@domain/Agent'
 
 class AgentListUseCase {
 	constructor(readonly agentRepository: AgentRepositoryPort) {}
@@ -8,5 +9,4 @@ class AgentListUseCase {
 	}
 }
 
-import type Agent from '@domain/Agent'
 export default AgentListUseCase

@@ -4,14 +4,14 @@ import { NotFoundError } from '@domain/errors'
 import JsonFileRepository from './JsonFileRepository'
 
 class JsonAgentRepository
-	extends JsonFileRepository<Agent>
+	extends JsonFileRepository<Agent, Pick<Agent, 'id' | 'name' | 'description'>>
 	implements AgentRepositoryPort
 {
 	constructor(filePath: string) {
 		super(filePath, 'Agent', NotFoundError)
 	}
 
-	protected validateItem(item: unknown): boolean {
+	validateItem(item: unknown): boolean {
 		if (typeof item !== 'object' || item === null) {
 			return false
 		}

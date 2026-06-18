@@ -4,7 +4,7 @@ import { NotFoundError } from '@domain/errors'
 import type { JsonSchemaObject } from '@domain/JsonSchema'
 import type Provider from '@domain/Provider'
 
-class DefaultProviderRegistry implements ProviderRegistryPort {
+class ProviderRegistry implements ProviderRegistryPort {
 	private readonly providerFactories: Record<string, () => ProviderPort> = {}
 	private readonly schemas: Record<string, JsonSchemaObject> = {}
 
@@ -36,4 +36,4 @@ class DefaultProviderRegistry implements ProviderRegistryPort {
 	}
 }
 
-export default DefaultProviderRegistry
+export default ProviderRegistry

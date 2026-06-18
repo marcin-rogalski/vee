@@ -1,5 +1,5 @@
 import type ProviderRegistryPort from '@application/ports/ProviderRegistry.port'
-import type ToolRegistryPort from '@application/ports/ToolRgistry.port'
+import type ToolRegistryPort from '@application/ports/ToolRegistry.port'
 import type Agent from '@domain/Agent'
 import { isTypedProperty } from '@domain/JsonSchema'
 import type Provider from '@domain/Provider'

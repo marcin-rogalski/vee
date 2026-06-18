@@ -1,35 +1,17 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
 import type ChatMessageRepositoryPort from '@application/ports/ChatMessageRepository.port'
 import type { ChatMessage } from '@application/ports/ChatMessageRepository.port'
+import { NotFoundError } from '@domain/errors'
+import JsonFileRepository from './JsonFileRepository'
 
-class JsonChatMessageRepository implements ChatMessageRepositoryPort {
-	constructor(protected readonly filePath: string) {}
-
-	protected async read(): Promise<Array<ChatMessage>> {
-		try {
-			const raw = await readFile(this.filePath, 'utf-8')
-			const items: unknown[] = JSON.parse(raw)
-			return items.filter((item) => {
-				if (this.isValidMessage(item as ChatMessage)) {
-					return true
-				}
-				console.warn('[ChatMessage] Invalid item filtered:', item)
-				return false
-			}) as Array<ChatMessage>
-		} catch (error) {
-			if (
-				error instanceof Error &&
-				'code' in error &&
-				error.code === 'ENOENT'
-			) {
-				return []
-			}
-			throw error
-		}
+class JsonChatMessageRepository
+	extends JsonFileRepository<ChatMessage>
+	implements ChatMessageRepositoryPort
+{
+	constructor(filePath: string) {
+		super(filePath, 'ChatMessage', NotFoundError)
 	}
 
-	private isValidMessage(item: unknown): boolean {
+	validateItem(item: unknown): boolean {
 		if (typeof item !== 'object' || item === null) {
 			return false
 		}
@@ -43,9 +25,12 @@ class JsonChatMessageRepository implements ChatMessageRepositoryPort {
 		)
 	}
 
-	protected async write(messages: Array<ChatMessage>): Promise<void> {
-		await mkdir(dirname(this.filePath), { recursive: true })
-		await writeFile(this.filePath, JSON.stringify(messages, null, 2), 'utf-8')
+	async get(_id: string): Promise<ChatMessage> {
+		throw new Error('Not implemented - use getBySession instead')
+	}
+
+	async list(): Promise<Array<ChatMessage>> {
+		return this.read()
 	}
 
 	async getBySession(sessionId: string): Promise<Array<ChatMessage>> {
@@ -53,10 +38,22 @@ class JsonChatMessageRepository implements ChatMessageRepositoryPort {
 		return messages.filter((m) => m.sessionId === sessionId)
 	}
 
+	async listAll(): Promise<Array<ChatMessage>> {
+		return this.read()
+	}
+
 	async create(message: ChatMessage): Promise<void> {
 		const messages = await this.read()
 		messages.push(message)
 		await this.write(messages)
+	}
+
+	async save(item: ChatMessage): Promise<void> {
+		await this.create(item)
+	}
+
+	async delete(_id: string): Promise<void> {
+		throw new Error('Not implemented - use deleteBySession instead')
 	}
 
 	async deleteBySession(sessionId: string): Promise<void> {

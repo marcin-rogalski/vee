@@ -19,7 +19,7 @@ class NodeEnvironment {
 		CHAT_MESSAGE_REPOSITORY_FILE: z.string().default('chat-messages.json'),
 
 		// ports
-		SEVER_PORT: z.coerce.number().default(3000),
+		SERVER_PORT: z.coerce.number().default(3000),
 
 		// cache
 		CACHE_TTL: z.coerce.number().default(3600000),
@@ -70,7 +70,7 @@ class NodeEnvironment {
 		)
 
 		// ports
-		this.serverPort = env.SEVER_PORT
+		this.serverPort = env.SERVER_PORT
 
 		// cache
 		this.cacheTtl = env.CACHE_TTL
@@ -83,7 +83,7 @@ class NodeEnvironment {
 			sessionRepositoryPath: this.sessionRepositoryPath,
 			contextRepositoryPath: this.contextRepositoryPath,
 			chatMessageRepositoryPath: this.chatMessageRepositoryPath,
-			serverPort: env.SEVER_PORT,
+			serverPort: env.SERVER_PORT,
 			cacheTtl: this.cacheTtl,
 		})
 	}

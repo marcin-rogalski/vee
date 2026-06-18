@@ -78,7 +78,9 @@ describe('CachedContextRepository', () => {
 
 		await new Promise((resolve) => setTimeout(resolve, 150))
 
+		// After TTL, cache reloads from disk - data persists (write-through cache)
 		const entries = await shortLivedRepo.get('session-1')
-		expect(entries).toEqual([])
+		expect(entries).toHaveLength(1)
+		expect(entries[0]?.content).toBe('Ephemeral')
 	})
 })

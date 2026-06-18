@@ -4,14 +4,14 @@ import type Provider from '@domain/Provider'
 import JsonFileRepository from './JsonFileRepository'
 
 class JsonProviderRepository
-	extends JsonFileRepository<Provider>
+	extends JsonFileRepository<Provider, Pick<Provider, 'id' | 'name'>>
 	implements ProviderRepositoryPort
 {
 	constructor(filePath: string) {
 		super(filePath, 'Provider', NotFoundError)
 	}
 
-	protected validateItem(item: unknown): boolean {
+	validateItem(item: unknown): boolean {
 		if (typeof item !== 'object' || item === null) {
 			return false
 		}

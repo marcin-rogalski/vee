@@ -62,6 +62,10 @@ class JsonContextRepository implements ContextRepositoryPort {
 		return contexts[sessionId] ?? []
 	}
 
+	async listAll(): Promise<Record<string, Array<ConversationEntry>>> {
+		return this.readContexts()
+	}
+
 	async append(
 		sessionId: string,
 		...entries: Array<ConversationEntry>

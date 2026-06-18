@@ -78,7 +78,9 @@ describe('CachedChatMessageRepository', () => {
 
 		await new Promise((resolve) => setTimeout(resolve, 150))
 
+		// After TTL, cache reloads from disk - data persists (write-through cache)
 		const messages = await shortLivedRepo.getBySession('session-1')
-		expect(messages).toEqual([])
+		expect(messages).toHaveLength(1)
+		expect(messages[0]?.content).toBe('Ephemeral')
 	})
 })

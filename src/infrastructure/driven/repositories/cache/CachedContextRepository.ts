@@ -26,7 +26,7 @@ class CachedContextRepository implements ContextRepositoryPort {
 		if (this.isCacheFresh()) {
 			return
 		}
-		const contexts: Record<string, Array<ConversationEntry>> = {}
+		const contexts = await this.delegate.listAll()
 		this.cache = { contexts, timestamp: Date.now() }
 	}
 
@@ -60,6 +60,11 @@ class CachedContextRepository implements ContextRepositoryPort {
 			this.cache.timestamp = Date.now()
 		}
 		await this.delegate.update(sessionId, entries)
+	}
+
+	async listAll(): Promise<Record<string, Array<ConversationEntry>>> {
+		await this.ensureCache()
+		return this.cache?.contexts ?? {}
 	}
 
 	async delete(sessionId: string): Promise<void> {

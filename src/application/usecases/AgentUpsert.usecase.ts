@@ -1,7 +1,7 @@
 import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
 import type EventBusPort from '@application/ports/EventBus.port'
 import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
-import type ToolRegistryPort from '@application/ports/ToolRgistry.port'
+import type ToolRegistryPort from '@application/ports/ToolRegistry.port'
 import type Agent from '@domain/Agent'
 
 class AgentUpsertUseCase {

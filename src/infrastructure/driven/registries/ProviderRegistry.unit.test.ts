@@ -2,13 +2,13 @@ import type ProviderPort from '@application/ports/Provider.port'
 import type { JsonSchemaObject } from '@domain/JsonSchema'
 import type Provider from '@domain/Provider'
 import { beforeEach, describe, expect, it } from 'vitest'
-import DefaultProviderRegistry from './DefaultProviderRegistry'
+import ProviderRegistry from './ProviderRegistry'
 
-describe('R1 — DefaultProviderRegistry', () => {
-	let registry: DefaultProviderRegistry
+describe('R1 — ProviderRegistry', () => {
+	let registry: ProviderRegistry
 
 	beforeEach(() => {
-		registry = new DefaultProviderRegistry()
+		registry = new ProviderRegistry()
 	})
 
 	it('registers a provider factory by type', () => {

@@ -8,6 +8,7 @@ export type ChatMessage = {
 
 interface ChatMessageRepositoryPort {
 	getBySession(sessionId: string): Promise<Array<ChatMessage>>
+	listAll(): Promise<Array<ChatMessage>>
 	create(message: ChatMessage): Promise<void>
 	deleteBySession(sessionId: string): Promise<void>
 }

@@ -26,7 +26,7 @@ class CachedChatMessageRepository implements ChatMessageRepositoryPort {
 		if (this.isCacheFresh()) {
 			return
 		}
-		const messages: Array<ChatMessage> = []
+		const messages = await this.delegate.listAll()
 		this.cache = { messages, timestamp: Date.now() }
 	}
 
@@ -42,6 +42,11 @@ class CachedChatMessageRepository implements ChatMessageRepositoryPort {
 			this.cache.timestamp = Date.now()
 		}
 		await this.delegate.create(message)
+	}
+
+	async listAll(): Promise<Array<ChatMessage>> {
+		await this.ensureCache()
+		return this.cache?.messages ?? []
 	}
 
 	async deleteBySession(sessionId: string): Promise<void> {

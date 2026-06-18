@@ -1,4 +1,4 @@
-import type ContextService from '@application/services/ContextService.port'
+import type ContextService from '@application/ports/ContextService.port'
 import type Agent from '@domain/Agent'
 import type ConversationEntry from '@domain/ConversationEntry'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

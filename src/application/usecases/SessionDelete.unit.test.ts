@@ -35,12 +35,14 @@ describe('UC6 — SessionDelete use case', () => {
 		}
 		mockContextRepository = {
 			get: async () => [],
+			listAll: async () => ({}),
 			append: async () => {},
 			update: async () => {},
 			delete: async () => {},
 		}
 		mockChatMessageRepository = {
 			getBySession: async () => [],
+			listAll: async () => [],
 			create: async () => {},
 			deleteBySession: async () => {},
 		}

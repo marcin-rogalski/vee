@@ -1,5 +1,5 @@
 import type ToolPort from '@application/ports/Tool.port'
-import type ToolRegistryPort from '@application/ports/ToolRgistry.port'
+import type ToolRegistryPort from '@application/ports/ToolRegistry.port'
 import { NotFoundError } from '@domain/errors'
 
 class ToolRegistry implements ToolRegistryPort {
