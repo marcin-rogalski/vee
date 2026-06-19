@@ -19,7 +19,7 @@ interface ProviderPort {
 
 export default ProviderPort
 
-type ProviderEvent =
+export type ProviderEvent =
 	| { type: 'token'; content: string }
 	| { type: 'thought'; content: string }
 	| {

@@ -21,6 +21,7 @@ describe('UC4 — SessionCreate use case', () => {
 				updatedAt: 0,
 			}),
 			list: async () => [],
+			listByAgentId: async () => [],
 			create: async (name: string, agentId: string) => ({
 				id: 'session-1',
 				name,

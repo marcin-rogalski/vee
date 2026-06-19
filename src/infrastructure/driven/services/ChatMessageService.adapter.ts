@@ -1,6 +1,6 @@
 import type ChatMessageRepositoryPort from '@application/ports/ChatMessageRepository.port'
-import type { ChatMessage } from '@application/ports/ChatMessageRepository.port'
 import type ChatMessageService from '@application/ports/ChatMessageService.port'
+import type { ChatMessage } from '@domain/ChatMessage'
 
 /** Infrastructure adapter that implements ChatMessageService using ChatMessageRepositoryPort. */
 class ChatMessageServiceAdapter implements ChatMessageService {

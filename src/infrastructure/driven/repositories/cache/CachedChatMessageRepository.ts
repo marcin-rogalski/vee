@@ -1,5 +1,5 @@
 import type ChatMessageRepositoryPort from '@application/ports/ChatMessageRepository.port'
-import type { ChatMessage } from '@application/ports/ChatMessageRepository.port'
+import type { ChatMessage } from '@domain/ChatMessage'
 import { isExpired } from './util'
 
 type CacheState = {

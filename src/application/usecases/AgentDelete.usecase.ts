@@ -10,9 +10,8 @@ class AgentDeleteUseCase {
 	) {}
 
 	async execute(id: string): Promise<void> {
-		const sessions = await this.sessionRepository.list()
-		const agentSessions = sessions.filter((s) => s.agentId === id)
-		for (const session of agentSessions) {
+		const sessions = await this.sessionRepository.listByAgentId(id)
+		for (const session of sessions) {
 			await this.sessionRepository.delete(session.id)
 		}
 		await this.agentRepository.delete(id)

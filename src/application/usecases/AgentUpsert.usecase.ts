@@ -3,6 +3,7 @@ import type EventBusPort from '@application/ports/EventBus.port'
 import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
 import type ToolRegistryPort from '@application/ports/ToolRegistry.port'
 import type Agent from '@domain/Agent'
+import { NotFoundError, ValidationError } from '@domain/errors'
 
 class AgentUpsertUseCase {
 	constructor(
@@ -16,7 +17,16 @@ class AgentUpsertUseCase {
 		await this.providerRepository.get(agent.providerId)
 
 		for (const toolId of agent.toolIds) {
-			this.toolRegistry.get(toolId)
+			try {
+				this.toolRegistry.get(toolId)
+			} catch (error) {
+				if (error instanceof NotFoundError) {
+					throw new ValidationError({
+						tool: `Tool "${toolId}" is not registered`,
+					})
+				}
+				throw error
+			}
 		}
 
 		await this.agentRepository.save(agent)

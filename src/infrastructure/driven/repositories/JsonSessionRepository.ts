@@ -42,6 +42,15 @@ class JsonSessionRepository
 		}))
 	}
 
+	async listByAgentId(
+		agentId: string,
+	): Promise<Array<Pick<Session, 'id' | 'name'>>> {
+		const sessions = await this.read()
+		return sessions
+			.filter((s) => s.agentId === agentId)
+			.map((s) => ({ id: s.id, name: s.name }))
+	}
+
 	async create(name: string, agentId: string): Promise<Session> {
 		const id = crypto.randomUUID()
 		const now = Date.now()

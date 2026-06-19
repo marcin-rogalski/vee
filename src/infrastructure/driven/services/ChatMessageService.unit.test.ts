@@ -1,5 +1,5 @@
 import type ChatMessageRepositoryPort from '@application/ports/ChatMessageRepository.port'
-import type { ChatMessage } from '@application/ports/ChatMessageRepository.port'
+import type { ChatMessage } from '@domain/ChatMessage'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ChatMessageServiceAdapter from './ChatMessageService.adapter'
 

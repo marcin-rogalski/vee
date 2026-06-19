@@ -23,6 +23,7 @@ describe('UC6 — SessionDelete use case', () => {
 				updatedAt: 0,
 			}),
 			list: async () => [],
+			listByAgentId: async () => [],
 			create: async () => ({
 				id: 'session-1',
 				name: '',

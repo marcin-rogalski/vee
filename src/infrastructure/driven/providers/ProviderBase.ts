@@ -1,4 +1,5 @@
 import type ProviderPort from '@application/ports/Provider.port'
+import type { ProviderEvent } from '@application/ports/Provider.port'
 import type { ToolDefinition } from '@application/ports/Tool.port'
 import type ConversationEntry from '@domain/ConversationEntry'
 import type { JsonSchemaObject } from '@domain/JsonSchema'
@@ -51,10 +52,3 @@ abstract class ProviderBase implements ProviderPort {
 }
 
 export default ProviderBase
-export type ProviderEvent =
-	| { type: 'token'; content: string }
-	| { type: 'thought'; content: string }
-	| {
-			type: 'tool-call'
-			toolCalls: Array<{ name: string; arguments: string }>
-	  }

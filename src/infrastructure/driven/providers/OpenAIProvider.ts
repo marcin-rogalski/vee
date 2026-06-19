@@ -1,7 +1,8 @@
+import type { ProviderEvent } from '@application/ports/Provider.port'
 import type { ToolDefinition } from '@application/ports/Tool.port'
 import type ConversationEntry from '@domain/ConversationEntry'
 import type { JsonSchemaObject } from '@domain/JsonSchema'
-import ProviderBase, { type ProviderEvent } from './ProviderBase'
+import ProviderBase from './ProviderBase'
 
 /** OpenAI provider implementation.
  *

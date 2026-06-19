@@ -1,10 +1,4 @@
-export type ChatMessage = {
-	id: string
-	sessionId: string
-	role: 'user' | 'assistant' | 'system'
-	content: string
-	ts: number
-}
+import type { ChatMessage } from '@domain/ChatMessage'
 
 interface ChatMessageRepositoryPort {
 	getBySession(sessionId: string): Promise<Array<ChatMessage>>

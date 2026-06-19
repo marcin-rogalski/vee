@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { ChatMessage } from '@application/ports/ChatMessageRepository.port'
+import type { ChatMessage } from '@domain/ChatMessage'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import JsonChatMessageRepository from './JsonChatMessageRepository'
 
