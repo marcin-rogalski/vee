@@ -44,6 +44,14 @@ class JsonChatMessageRepository
 
 	async create(message: ChatMessage): Promise<void> {
 		const messages = await this.read()
+		// Cap messages per session to bound growth
+		const sessionMessages = messages.filter(
+			(m) => m.sessionId !== message.sessionId,
+		)
+		if (sessionMessages.length >= 100) {
+			// Remove oldest messages to stay at limit
+			messages.splice(0, messages.length - 99)
+		}
 		messages.push(message)
 		await this.write(messages)
 	}

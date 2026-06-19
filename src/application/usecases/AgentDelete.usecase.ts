@@ -10,6 +10,9 @@ class AgentDeleteUseCase {
 	) {}
 
 	async execute(id: string): Promise<void> {
+		// Ensure agent exists before attempting deletion
+		await this.agentRepository.get(id)
+
 		const sessions = await this.sessionRepository.listByAgentId(id)
 		for (const session of sessions) {
 			await this.sessionRepository.delete(session.id)

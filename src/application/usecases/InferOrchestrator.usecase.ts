@@ -49,12 +49,12 @@ class InferOrchestratorUseCase {
 		const agent = await this.agentRepository.get(agentId)
 		const providerEntity = await this.providerRepository.get(agent.providerId)
 		const provider = this.providerRegistry.resolve(providerEntity)
-		const tools = agent.toolIds.map(
-			(id) => this.toolRegistry.get(id).definition,
-		)
+		const tools: Array<ToolPort['definition']> = []
 		const toolMap = new Map<string, ToolPort>()
 		for (const id of agent.toolIds) {
-			toolMap.set(id, this.toolRegistry.get(id))
+			const tool = this.toolRegistry.get(id)
+			toolMap.set(id, tool)
+			tools.push(tool.definition)
 		}
 
 		const mergedConfig = {
@@ -84,6 +84,9 @@ class InferOrchestratorUseCase {
 		})
 
 		// --- Inference loop ---
+		// NOTE: Context is rebuilt from scratch each iteration to incorporate
+		// tool results. This is acceptable at current scale. If performance
+		// becomes a concern, consider incremental context updates instead.
 		let maxIterations = 10
 		while (maxIterations-- > 0) {
 			// Build context from scratch each iteration

@@ -1,6 +1,5 @@
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import * as process from 'node:process'
 import type LoggerPort from '@application/ports/Logger.port'
 import { z } from 'zod'
 

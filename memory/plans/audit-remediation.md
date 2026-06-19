@@ -28,16 +28,16 @@ Comprehensive audit of the codebase revealed 41 issues across architecture, code
 4. [x] agentupsert-tool-error-error-handling — Wrap `toolRegistry.get()` with contextual error in AgentUpsert (#9)
 5. [x] add-listbyagentid — Add `listByAgentId` to SessionRepositoryPort and update AgentDelete (#25)
 
-### Phase 2: Non-Critical — Trivial Fixes
+### Phase 2: Non-Critical — Trivial Fixes ✅ COMPLETE
 
-6. [ ] cache-map-refactor — Refactor cache repositories to use `Map` with ID keys (#6)
-7. [ ] single-tool-resolution-loop — Combine two `toolRegistry.get()` passes in InferOrchestrator (#5)
-8. [ ] delete-existence-checks — Add `get()` before `delete()` in all delete usecases (#7)
-9. [ ] consolelogger-stderr — Route error-level logs to stderr in ConsoleLogger (#14)
-10. [ ] process-import-shadowing — Remove `import * as process` from NodeEnvironment (#15)
-11. [ ] message-size-limit — Cap messages at 100 per session in chat message repositories (#28)
-12. [ ] cache-test-coverage — Add comprehensive tests for all three cache repositories (#20)
-13. [ ] context-rebuild-comment — Add code comment noting context rebuild pattern in InferOrchestrator (#27)
+6. [x] cache-map-refactor — Refactor cache repositories to use `Map` with ID keys (#6)
+7. [x] single-tool-resolution-loop — Combine two `toolRegistry.get()` passes in InferOrchestrator (#5)
+8. [x] delete-existence-checks — Add `get()` before `delete()` in all delete usecases (#7)
+9. [x] consolelogger-stderr — Route error-level logs to stderr in ConsoleLogger (#14)
+10. [x] process-import-shadowing — Remove `import * as process` from NodeEnvironment (#15)
+11. [x] message-size-limit — Cap messages at 100 per session in chat message repositories (#28)
+12. [x] cache-test-coverage — Add comprehensive tests for all three cache repositories (#20)
+13. [x] context-rebuild-comment — Add code comment noting context rebuild pattern in InferOrchestrator (#27)
 
 ### Phase 3: Non-Trivial — Plan Separately
 

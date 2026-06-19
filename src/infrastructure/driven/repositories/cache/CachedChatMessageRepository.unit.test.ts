@@ -67,6 +67,15 @@ describe('CachedChatMessageRepository', () => {
 		expect(messages).toEqual([])
 	})
 
+	it('listAll() returns all messages across sessions', async () => {
+		await repo.create(makeMessage('session-1', 'A'))
+		await repo.create(makeMessage('session-1', 'B'))
+		await repo.create(makeMessage('session-2', 'C'))
+
+		const all = await repo.listAll()
+		expect(all).toHaveLength(3)
+	})
+
 	it('cache expires after TTL', async () => {
 		const shortLivedRepo = new CachedChatMessageRepository(
 			new JsonChatMessageRepository(join(tmpDir, 'chat-messages2.json')),

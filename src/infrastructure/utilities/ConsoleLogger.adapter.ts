@@ -24,7 +24,7 @@ class ConsoleLogger implements LoggerPort {
 				errorField.error = { message: String(err) }
 			}
 		}
-		process.stdout.write(
+		process.stderr.write(
 			// biome-ignore lint/style/useTemplate: no reason to use template here
 			JSON.stringify({
 				level: 'error',

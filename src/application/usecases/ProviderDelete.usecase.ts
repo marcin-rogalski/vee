@@ -10,6 +10,8 @@ class ProviderDeleteUseCase {
 	) {}
 
 	async execute(id: string): Promise<void> {
+		// Ensure provider exists before attempting deletion
+		await this.providerRepository.get(id)
 		const agents = await this.agentRepository.listByProviderId(id)
 		for (const agent of agents) {
 			await this.agentRepository.delete(agent.id)

@@ -4,7 +4,7 @@ import type Session from '@domain/Session'
 import { isExpired } from './util'
 
 type CacheState = {
-	sessions: Session[]
+	sessions: Map<string, Session>
 	timestamp: number
 }
 
@@ -28,15 +28,19 @@ class CachedSessionRepository implements SessionRepositoryPort {
 			return
 		}
 		const sessions = await this.delegate.list()
+		const sessionMap = new Map<string, Session>()
+		for (const s of sessions as unknown as Session[]) {
+			sessionMap.set(s.id, s)
+		}
 		this.cache = {
-			sessions: sessions as unknown as Session[],
+			sessions: sessionMap,
 			timestamp: Date.now(),
 		}
 	}
 
 	async get(id: string): Promise<Session> {
 		await this.ensureCache()
-		const session = this.cache?.sessions.find((s) => s.id === id)
+		const session = this.cache?.sessions.get(id)
 		if (!session) {
 			throw new NotFoundError('Session', id)
 		}
@@ -45,39 +49,35 @@ class CachedSessionRepository implements SessionRepositoryPort {
 
 	async list(): Promise<Array<Pick<Session, 'id' | 'name' | 'agentId'>>> {
 		await this.ensureCache()
-		return (
-			this.cache?.sessions.map((s) => ({
-				id: s.id,
-				name: s.name,
-				agentId: s.agentId,
-			})) ?? []
-		)
+		return Array.from(this.cache?.sessions.values() ?? []).map((s) => ({
+			id: s.id,
+			name: s.name,
+			agentId: s.agentId,
+		}))
 	}
 
 	async listByAgentId(
 		agentId: string,
 	): Promise<Array<Pick<Session, 'id' | 'name'>>> {
 		await this.ensureCache()
-		return (
-			this.cache?.sessions
-				.filter((s) => s.agentId === agentId)
-				.map((s) => ({ id: s.id, name: s.name })) ?? []
-		)
+		return Array.from(this.cache?.sessions.values() ?? [])
+			.filter((s) => s.agentId === agentId)
+			.map((s) => ({ id: s.id, name: s.name }))
 	}
 
 	async create(name: string, agentId: string): Promise<Session> {
 		const session = await this.delegate.create(name, agentId)
 		if (!this.cache) {
-			this.cache = { sessions: [], timestamp: Date.now() }
+			this.cache = { sessions: new Map(), timestamp: Date.now() }
 		}
-		this.cache.sessions.push(session)
+		this.cache.sessions.set(session.id, session)
 		this.cache.timestamp = Date.now()
 		return session
 	}
 
 	async setName(id: string, name: string): Promise<void> {
 		await this.ensureCache()
-		const session = this.cache?.sessions.find((s) => s.id === id)
+		const session = this.cache?.sessions.get(id)
 		if (!session) {
 			throw new NotFoundError('Session', id)
 		}
@@ -88,9 +88,7 @@ class CachedSessionRepository implements SessionRepositoryPort {
 
 	async delete(id: string): Promise<void> {
 		await this.ensureCache()
-		if (this.cache) {
-			this.cache.sessions = this.cache.sessions.filter((s) => s.id !== id)
-		}
+		this.cache?.sessions.delete(id)
 		await this.delegate.delete(id)
 	}
 }

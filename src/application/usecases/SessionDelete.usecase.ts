@@ -12,6 +12,8 @@ class SessionDeleteUseCase {
 	) {}
 
 	async execute(id: string): Promise<void> {
+		// Ensure session exists before attempting deletion
+		await this.sessionRepository.get(id)
 		await this.sessionRepository.delete(id)
 		await this.contextRepository.delete(id)
 		await this.chatMessageRepository.deleteBySession(id)

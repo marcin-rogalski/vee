@@ -3,7 +3,7 @@ import type { ChatMessage } from '@domain/ChatMessage'
 import { isExpired } from './util'
 
 type CacheState = {
-	messages: Array<ChatMessage>
+	messages: Map<string, ChatMessage>
 	timestamp: number
 }
 
@@ -27,18 +27,24 @@ class CachedChatMessageRepository implements ChatMessageRepositoryPort {
 			return
 		}
 		const messages = await this.delegate.listAll()
-		this.cache = { messages, timestamp: Date.now() }
+		const messageMap = new Map<string, ChatMessage>()
+		for (const m of messages) {
+			messageMap.set(m.id, m)
+		}
+		this.cache = { messages: messageMap, timestamp: Date.now() }
 	}
 
 	async getBySession(sessionId: string): Promise<Array<ChatMessage>> {
 		await this.ensureCache()
-		return this.cache?.messages.filter((m) => m.sessionId === sessionId) ?? []
+		return Array.from(this.cache?.messages.values() ?? []).filter(
+			(m) => m.sessionId === sessionId,
+		)
 	}
 
 	async create(message: ChatMessage): Promise<void> {
 		await this.ensureCache()
 		if (this.cache) {
-			this.cache.messages.push(message)
+			this.cache.messages.set(message.id, message)
 			this.cache.timestamp = Date.now()
 		}
 		await this.delegate.create(message)
@@ -46,15 +52,17 @@ class CachedChatMessageRepository implements ChatMessageRepositoryPort {
 
 	async listAll(): Promise<Array<ChatMessage>> {
 		await this.ensureCache()
-		return this.cache?.messages ?? []
+		return Array.from(this.cache?.messages.values() ?? [])
 	}
 
 	async deleteBySession(sessionId: string): Promise<void> {
 		await this.ensureCache()
 		if (this.cache) {
-			this.cache.messages = this.cache.messages.filter(
-				(m) => m.sessionId !== sessionId,
-			)
+			for (const [id, m] of this.cache.messages) {
+				if (m.sessionId === sessionId) {
+					this.cache.messages.delete(id)
+				}
+			}
 		}
 		await this.delegate.deleteBySession(sessionId)
 	}

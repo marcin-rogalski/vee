@@ -67,6 +67,16 @@ describe('CachedContextRepository', () => {
 		expect(entries).toEqual([])
 	})
 
+	it('listAll() returns all sessions contexts', async () => {
+		await repo.append('session-1', makeEntry('A'))
+		await repo.append('session-2', makeEntry('B'))
+
+		const all = await repo.listAll()
+		expect(Object.keys(all)).toHaveLength(2)
+		expect(all['session-1']).toHaveLength(1)
+		expect(all['session-2']).toHaveLength(1)
+	})
+
 	it('cache expires after TTL', async () => {
 		const shortLivedRepo = new CachedContextRepository(
 			new JsonContextRepository(join(tmpDir, 'context2.json')),

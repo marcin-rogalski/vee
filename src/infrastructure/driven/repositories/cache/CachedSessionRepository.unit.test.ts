@@ -66,6 +66,25 @@ describe('CachedSessionRepository', () => {
 		expect(delegatedList).toHaveLength(0)
 	})
 
+	it('listByAgentId() returns only sessions for matching agent', async () => {
+		await repo.create('Agent 1 Session', 'agent-1')
+		await repo.create('Agent 2 Session', 'agent-2')
+		await repo.create('Agent 1 Another', 'agent-1')
+
+		const agent1Sessions = await repo.listByAgentId('agent-1')
+		expect(agent1Sessions).toHaveLength(2)
+		expect(agent1Sessions.map((s) => s.name)).toEqual([
+			'Agent 1 Session',
+			'Agent 1 Another',
+		])
+
+		const agent2Sessions = await repo.listByAgentId('agent-2')
+		expect(agent2Sessions).toHaveLength(1)
+
+		const agent3Sessions = await repo.listByAgentId('agent-3')
+		expect(agent3Sessions).toHaveLength(0)
+	})
+
 	it('cache expires after TTL', async () => {
 		const shortLivedRepo = new CachedSessionRepository(jsonRepo, 100)
 
