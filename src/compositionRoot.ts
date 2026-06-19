@@ -5,6 +5,7 @@ import type EventBusPort from '@application/ports/EventBus.port'
 import type LoggerPort from '@application/ports/Logger.port'
 import type ProviderRegistryPort from '@application/ports/ProviderRegistry.port'
 import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
+import type SchemaValidationService from '@application/ports/SchemaValidationService.port'
 import type SessionRepositoryPort from '@application/ports/SessionRepository.port'
 import type ToolRegistryPort from '@application/ports/ToolRegistry.port'
 import AgentDeleteUseCase from '@application/usecases/AgentDelete.usecase'
@@ -33,6 +34,7 @@ import JsonProviderRepository from '@infrastructure/driven/repositories/JsonProv
 import JsonSessionRepository from '@infrastructure/driven/repositories/JsonSessionRepository'
 import ChatMessageServiceAdapter from '@infrastructure/driven/services/ChatMessageService.adapter'
 import ContextServiceAdapter from '@infrastructure/driven/services/ContextService.adapter'
+import SchemaValidationServiceAdapter from '@infrastructure/driven/services/SchemaValidationService.adapter'
 import ConsoleLogger from '@infrastructure/utilities/ConsoleLogger.adapter'
 import InMemoryEventBus from '@infrastructure/utilities/InMemoryEventBus'
 import NodeEnvironment from '@infrastructure/utilities/NodeEnvironment.adapter'
@@ -47,6 +49,7 @@ interface CompositionRoot {
 	chatMessageRepository: ChatMessageRepositoryPort
 	toolRegistry: ToolRegistryPort
 	providerRegistry: ProviderRegistryPort
+	schemaValidationService: SchemaValidationService
 	eventBus: EventBusPort
 	agentUpsert: InstanceType<typeof AgentUpsertUseCase>
 	agentList: InstanceType<typeof AgentListUseCase>
@@ -91,6 +94,7 @@ const eventBus = new InMemoryEventBus()
 const contextService = new ContextServiceAdapter(contextRepository)
 const chatMessageService = new ChatMessageServiceAdapter(chatMessageRepository)
 const buildContextUseCase = new BuildContextUseCase(contextService)
+const schemaValidationService = new SchemaValidationServiceAdapter()
 
 const compositionRoot: CompositionRoot = {
 	logger,
@@ -102,6 +106,7 @@ const compositionRoot: CompositionRoot = {
 	chatMessageRepository,
 	toolRegistry,
 	providerRegistry,
+	schemaValidationService,
 	eventBus,
 	agentUpsert: new AgentUpsertUseCase(
 		agentRepository,
@@ -115,7 +120,11 @@ const compositionRoot: CompositionRoot = {
 		sessionRepository,
 		eventBus,
 	),
-	providerUpsert: new ProviderUpsertUseCase(providerRepository, eventBus),
+	providerUpsert: new ProviderUpsertUseCase(
+		providerRepository,
+		eventBus,
+		schemaValidationService,
+	),
 	providerList: new ProviderListUseCase(providerRepository),
 	providerDelete: new ProviderDeleteUseCase(
 		providerRepository,

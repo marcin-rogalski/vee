@@ -1,7 +1,7 @@
 import { ValidationError } from '@domain/errors'
 import { isTypedProperty } from '@domain/JsonSchema'
+import { validateJsonSchema } from '@infrastructure/utilities/JsonSchemaValidator.adapter'
 import { describe, expect, it } from 'vitest'
-import { validateJsonSchema } from './jsonSchemaToZod'
 import OpenAIProvider from './OpenAIProvider'
 
 describe('OpenAIProvider', () => {

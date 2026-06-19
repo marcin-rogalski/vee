@@ -1,12 +1,15 @@
 import type EventBusPort from '@application/ports/EventBus.port'
 import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
+import type SchemaValidationService from '@application/ports/SchemaValidationService.port'
 import type { JsonSchemaObject } from '@domain/JsonSchema'
+import { validateJsonSchema } from '@infrastructure/utilities/JsonSchemaValidator.adapter'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ProviderUpsertUseCase from './ProviderUpsert.usecase'
 
 describe('UC8 — ProviderUpsert use case', () => {
 	let mockRepository: ProviderRepositoryPort
 	let mockEventBus: EventBusPort
+	let mockSchemaValidationService: SchemaValidationService
 	let useCase: ProviderUpsertUseCase
 
 	beforeEach(() => {
@@ -40,7 +43,14 @@ describe('UC8 — ProviderUpsert use case', () => {
 				unsubscribe: () => void
 			}),
 		}
-		useCase = new ProviderUpsertUseCase(mockRepository, mockEventBus)
+		mockSchemaValidationService = {
+			validate: vi.fn((config, schema) => validateJsonSchema(config, schema)),
+		}
+		useCase = new ProviderUpsertUseCase(
+			mockRepository,
+			mockEventBus,
+			mockSchemaValidationService,
+		)
 	})
 
 	it('validates config against configSchema before saving', async () => {

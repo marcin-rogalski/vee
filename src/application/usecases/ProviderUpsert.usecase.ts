@@ -1,19 +1,23 @@
 import type EventBusPort from '@application/ports/EventBus.port'
 import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
+import type SchemaValidationService from '@application/ports/SchemaValidationService.port'
 import { ValidationError } from '@domain/errors'
 import type Provider from '@domain/Provider'
-import { validateJsonSchema } from '@infrastructure/driven/providers/jsonSchemaToZod'
 
 class ProviderUpsertUseCase {
 	constructor(
 		readonly providerRepository: ProviderRepositoryPort,
 		readonly eventBus: EventBusPort,
+		readonly schemaValidationService: SchemaValidationService,
 	) {}
 
 	async execute(provider: Provider): Promise<void> {
 		if (provider.configSchema) {
 			try {
-				validateJsonSchema(provider.config, provider.configSchema)
+				this.schemaValidationService.validate(
+					provider.config,
+					provider.configSchema,
+				)
 			} catch (error) {
 				if (error instanceof ValidationError) {
 					throw new ValidationError({
