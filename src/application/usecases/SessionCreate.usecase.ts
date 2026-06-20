@@ -1,6 +1,5 @@
 import type EventBusPort from '@application/ports/EventBus.port'
 import type SessionRepositoryPort from '@application/ports/SessionRepository.port'
-import { ValidationError } from '@domain/errors'
 
 class SessionCreateUseCase {
 	constructor(
@@ -9,13 +8,10 @@ class SessionCreateUseCase {
 	) {}
 
 	async execute(name?: string, agentId?: string): Promise<string> {
-		const safeName = typeof name === 'string' ? name : ''
-		if (!agentId) {
-			throw new ValidationError({
-				agentId: 'agentId is required for session creation',
-			})
-		}
-		const session = await this.sessionRepository.create(safeName, agentId)
+		const session = await this.sessionRepository.create(
+			typeof name === 'string' ? name : '',
+			agentId ?? '',
+		)
 
 		this.eventBus.publish({
 			id: crypto.randomUUID(),

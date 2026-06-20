@@ -1,7 +1,7 @@
-import type Session from '@domain/Session'
+import type { SessionData } from '@domain/Session'
 
-type SessionDto = Session
+type SessionDto = SessionData
 
 export default SessionDto
 
-export type ChatSessionSummaryDto = Pick<Session, 'id' | 'name' | 'agentId'>
+export type ChatSessionSummaryDto = Pick<SessionData, 'id' | 'name' | 'agentId'>

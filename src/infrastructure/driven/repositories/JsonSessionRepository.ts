@@ -1,10 +1,13 @@
 import type SessionRepositoryPort from '@application/ports/SessionRepository.port'
 import { NotFoundError } from '@domain/errors'
-import type Session from '@domain/Session'
+import Session, { type SessionData } from '@domain/Session'
 import JsonFileRepository from './JsonFileRepository'
 
 class JsonSessionRepository
-	extends JsonFileRepository<Session, Pick<Session, 'id' | 'name' | 'agentId'>>
+	extends JsonFileRepository<
+		SessionData,
+		Pick<SessionData, 'id' | 'name' | 'agentId'>
+	>
 	implements SessionRepositoryPort
 {
 	constructor(filePath: string) {
@@ -24,13 +27,13 @@ class JsonSessionRepository
 		)
 	}
 
-	async get(id: string): Promise<Session> {
+	async get(id: string): Promise<SessionData> {
 		const sessions = await this.read()
-		const session = sessions.find((s) => s.id === id)
-		if (!session) {
+		const data = sessions.find((s) => s.id === id)
+		if (!data) {
 			throw new NotFoundError('Session', id)
 		}
-		return session
+		return data
 	}
 
 	async list(): Promise<Array<Pick<Session, 'id' | 'name' | 'agentId'>>> {
@@ -51,30 +54,24 @@ class JsonSessionRepository
 			.map((s) => ({ id: s.id, name: s.name }))
 	}
 
-	async create(name: string, agentId: string): Promise<Session> {
-		const id = crypto.randomUUID()
-		const now = Date.now()
-		const session: Session = {
-			id,
-			name,
-			agentId,
-			createdAt: now,
-			updatedAt: now,
-		}
+	async create(name: string, agentId: string): Promise<SessionData> {
+		const session = new Session({ name, agentId })
+		const data = session.toData()
 		const sessions = await this.read()
-		sessions.push(session)
+		sessions.push(data)
 		await this.write(sessions)
-		return session
+		return data
 	}
 
 	async setName(id: string, name: string): Promise<void> {
 		const sessions = await this.read()
-		const session = sessions.find((s) => s.id === id)
-		if (!session) {
+		const data = sessions.find((s) => s.id === id)
+		if (!data) {
 			throw new NotFoundError('Session', id)
 		}
-		session.name = name
-		session.updatedAt = Date.now()
+		const session = new Session(data)
+		session.rename(name)
+		Object.assign(data, session.toData())
 		await this.write(sessions)
 	}
 

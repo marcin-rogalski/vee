@@ -1,6 +1,6 @@
 import type SessionRepositoryPort from '@application/ports/SessionRepository.port'
 import { NotFoundError } from '@domain/errors'
-import type Session from '@domain/Session'
+import Session, { type SessionData } from '@domain/Session'
 import { isExpired } from './util'
 
 type CacheState = {
@@ -27,10 +27,12 @@ class CachedSessionRepository implements SessionRepositoryPort {
 		if (this.isCacheFresh()) {
 			return
 		}
-		const sessions = await this.delegate.list()
+		// Rebuild cache from delegate — use list() to get IDs, then hydrate each
+		const summaries = await this.delegate.list()
 		const sessionMap = new Map<string, Session>()
-		for (const s of sessions as unknown as Session[]) {
-			sessionMap.set(s.id, s)
+		for (const s of summaries) {
+			const full = await this.delegate.get(s.id)
+			sessionMap.set(full.id, new Session(full))
 		}
 		this.cache = {
 			sessions: sessionMap,
@@ -38,13 +40,13 @@ class CachedSessionRepository implements SessionRepositoryPort {
 		}
 	}
 
-	async get(id: string): Promise<Session> {
+	async get(id: string): Promise<SessionData> {
 		await this.ensureCache()
 		const session = this.cache?.sessions.get(id)
 		if (!session) {
 			throw new NotFoundError('Session', id)
 		}
-		return session
+		return session.toData()
 	}
 
 	async list(): Promise<Array<Pick<Session, 'id' | 'name' | 'agentId'>>> {
@@ -65,12 +67,13 @@ class CachedSessionRepository implements SessionRepositoryPort {
 			.map((s) => ({ id: s.id, name: s.name }))
 	}
 
-	async create(name: string, agentId: string): Promise<Session> {
+	async create(name: string, agentId: string): Promise<SessionData> {
 		const session = await this.delegate.create(name, agentId)
+		const sessionObj = new Session(session)
 		if (!this.cache) {
 			this.cache = { sessions: new Map(), timestamp: Date.now() }
 		}
-		this.cache.sessions.set(session.id, session)
+		this.cache.sessions.set(sessionObj.id, sessionObj)
 		this.cache.timestamp = Date.now()
 		return session
 	}
@@ -81,8 +84,7 @@ class CachedSessionRepository implements SessionRepositoryPort {
 		if (!session) {
 			throw new NotFoundError('Session', id)
 		}
-		session.name = name
-		session.updatedAt = Date.now()
+		session.rename(name)
 		await this.delegate.setName(id, name)
 	}
 
