@@ -1,5 +1,5 @@
 import type ContextRepositoryPort from '@application/ports/ContextRepository.port'
-import type ConversationEntry from '@domain/ConversationEntry'
+import type { ConversationEntry } from '@domain/ConversationEntry'
 import { isExpired } from './util'
 
 type CacheState = {

@@ -7,12 +7,15 @@
 	"scripts": {
 		"start:server": "tsup src/entryServer.ts --watch --format cjs",
 		"start:cli": "tsup src/entryCli.ts --watch --format cjs",
+		"cli": "tsx src/entryCli.ts",
 		"build": "tsup",
 		"test": "vitest run",
+		"test:e2e": "vitest run --config vitest.e2e.config.ts",
 		"lint": "biome check --write --unsafe",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
+		"commander": "^15.0.0",
 		"express": "^5.2.1",
 		"ink": "^7.0.3",
 		"ink-select-input": "^6.2.0",
@@ -29,8 +32,14 @@
 		"@types/node": "^25.6.0",
 		"@types/react": "^19.2.15",
 		"@types/react-dom": "^19.2.3",
+		"@types/supertest": "^7.2.0",
+		"execa": "^9.6.1",
+		"ink-testing-library": "^4.0.0",
 		"jsdom": "^29.1.1",
-		"tsup": "^6.5.0",
+		"strip-ansi": "^7.2.0",
+		"supertest": "^7.2.2",
+		"tsup": "^8.5.1",
+		"tsx": "^4.20.6",
 		"typescript": "^6.0.3",
 		"vitest": "^4.1.5"
 	}

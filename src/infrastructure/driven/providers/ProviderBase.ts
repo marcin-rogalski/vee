@@ -1,7 +1,7 @@
 import type ProviderPort from '@application/ports/Provider.port'
 import type { ProviderEvent } from '@application/ports/Provider.port'
 import type { ToolDefinition } from '@application/ports/Tool.port'
-import type ConversationEntry from '@domain/ConversationEntry'
+import type { ConversationEntry } from '@domain/ConversationEntry'
 import type { JsonSchemaObject } from '@domain/JsonSchema'
 
 /** Abstract base class for all provider implementations.

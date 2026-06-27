@@ -1,9 +1,17 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type Agent from '@domain/Agent'
+import type LoggerPort from '@application/ports/Logger.port'
+import type { AgentData } from '@domain/Agent'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import JsonAgentRepository from './JsonAgentRepository'
+
+const noopLogger: LoggerPort = {
+	info: () => {},
+	warn: () => {},
+	error: () => {},
+	debug: () => {},
+}
 
 describe('JsonAgentRepository', () => {
 	let tmpDir: string
@@ -11,7 +19,7 @@ describe('JsonAgentRepository', () => {
 
 	beforeEach(async () => {
 		tmpDir = await mkdtemp(join(tmpdir(), 'vee-test-'))
-		repo = new JsonAgentRepository(join(tmpDir, 'agents.json'))
+		repo = new JsonAgentRepository(join(tmpDir, 'agents.json'), noopLogger)
 	})
 
 	afterEach(async () => {
@@ -19,7 +27,7 @@ describe('JsonAgentRepository', () => {
 	})
 
 	it('save() stores agent, get() retrieves it', async () => {
-		const agent: Agent = {
+		const agent: AgentData = {
 			id: 'agent-1',
 			name: 'Test Agent',
 			systemPrompt: 'Be helpful',
@@ -145,7 +153,7 @@ describe('JsonAgentRepository', () => {
 	})
 
 	it('persists data across instances', async () => {
-		const agent: Agent = {
+		const agent: AgentData = {
 			id: 'a1',
 			name: 'Persistent',
 			systemPrompt: '',
@@ -155,7 +163,10 @@ describe('JsonAgentRepository', () => {
 		}
 		await repo.save(agent)
 
-		const repo2 = new JsonAgentRepository(join(tmpDir, 'agents.json'))
+		const repo2 = new JsonAgentRepository(
+			join(tmpDir, 'agents.json'),
+			noopLogger,
+		)
 		const retrieved = await repo2.get('a1')
 		expect(retrieved.name).toBe('Persistent')
 	})

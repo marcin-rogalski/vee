@@ -6,49 +6,41 @@ import CLI from './CLI'
 vi.mock('commander', async (importOriginal) => {
 	const actual = (await importOriginal()) as Record<string, unknown>
 	const RealCommand = actual.Command as typeof Command
+	const MockedCommand = vi.fn().mockImplementation(function (
+		this: Command,
+		name?: string,
+	) {
+		const cmd = new RealCommand(name)
+		const mockCmd = cmd as any
+		mockCmd.name = vi.fn((n: string) => {
+			mockCmd._name = n
+			return cmd
+		})
+		mockCmd.option = vi.fn((flag: string, desc?: string) => {
+			const realCmd = new RealCommand()
+			realCmd.option(flag, desc ?? '')
+			return cmd
+		})
+		mockCmd.action = vi.fn(
+			(fn: (...args: unknown[]) => void | Promise<void>) => {
+				mockCmd._action = fn
+				return cmd
+			},
+		)
+		mockCmd.addCommand = vi.fn((c: Command) => {
+			mockCmd._addCommand = mockCmd._addCommand ?? []
+			mockCmd._addCommand.push(c)
+			return cmd
+		})
+		mockCmd.parseAsync = vi.fn(async (..._args: unknown[]) => cmd)
+		mockCmd.addHelpCommand = vi.fn((..._args: unknown[]) => cmd)
+		mockCmd._name = name ?? ''
+		mockCmd._addCommand = []
+		return cmd
+	}) as unknown as typeof Command
 	return {
 		...actual,
-		Command: class MockCommand extends RealCommand {
-			private _name = ''
-			private aliases: string[] = []
-			private _usageValue = ''
-			private _options: Array<{ flag: string; desc: string | undefined }> = []
-			_addCommand: unknown[] = []
-			_action?: (...args: unknown[]) => Promise<void> | void
-			addHelpCommand = vi.fn()
-			_usage = vi.fn()
-			_option = vi.fn()
-			helpInformation = vi.fn(() => 'help info')
-
-			name(): string
-			name(cmdName: string): Command
-			name(cmdName?: string): Command | string {
-				if (typeof cmdName === 'string') {
-					this._name = cmdName
-					return this as unknown as Command
-				}
-				return this._name
-			}
-
-			option(flag: string, desc?: string): Command {
-				this._options.push({ flag, desc: desc ?? undefined })
-				return this as unknown as Command
-			}
-
-			action(fn: (...args: unknown[]) => void): Command {
-				this._action = fn
-				return this as unknown as Command
-			}
-
-			addCommand(cmd: unknown): Command {
-				this._addCommand.push(cmd)
-				return this as unknown as Command
-			}
-
-			async parseAsync(_argv?: string[]): Promise<void> {
-				return undefined
-			}
-		},
+		Command: MockedCommand,
 	}
 })
 
@@ -129,6 +121,8 @@ describe('CLI', () => {
 			providerRegistry: {
 				register: vi.fn(),
 				list: vi.fn(),
+				listTypes: vi.fn(),
+				schema: vi.fn(),
 			},
 			eventBus: {
 				subscribe: vi.fn(),
@@ -178,7 +172,9 @@ describe('CLI', () => {
 			new CLI(mockCore)
 			const CommandClass = Command as new (name?: string) => Command
 			const instance = new CommandClass('test')
-			expect((instance as Record<string, unknown>).addHelpCommand).toBeDefined()
+			expect(
+				(instance as unknown as Record<string, unknown>).addHelpCommand,
+			).toBeDefined()
 		})
 	})
 
@@ -197,7 +193,7 @@ describe('CLI', () => {
 			const cli = new CLI(mockCore)
 			const program = cli as unknown as { program: Command }
 			const parseAsyncSpy = vi.spyOn(program.program, 'parseAsync')
-			parseAsyncSpy.mockResolvedValue(undefined)
+			parseAsyncSpy.mockResolvedValue(program.program)
 			await cli.run(['node', 'vee', 'list'])
 			expect(parseAsyncSpy).toHaveBeenCalled()
 		})

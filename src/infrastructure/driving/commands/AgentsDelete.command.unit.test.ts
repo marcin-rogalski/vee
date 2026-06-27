@@ -55,7 +55,7 @@ describe('AgentsDelete.command', () => {
 			logger: mockLogger,
 		})
 
-		expect(command.name()).toBe('delete <id>')
+		expect(command.name()).toBe('delete')
 		expect(command.description()).toBe('Delete an agent by ID')
 	})
 

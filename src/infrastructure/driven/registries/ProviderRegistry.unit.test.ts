@@ -1,6 +1,6 @@
 import type ProviderPort from '@application/ports/Provider.port'
 import type { JsonSchemaObject } from '@domain/JsonSchema'
-import type Provider from '@domain/Provider'
+import type { ProviderData } from '@domain/Provider'
 import { beforeEach, describe, expect, it } from 'vitest'
 import ProviderRegistry from './ProviderRegistry'
 
@@ -21,7 +21,7 @@ describe('R1 — ProviderRegistry', () => {
 			infer: async function* () {},
 		}
 		registry.register('openai', () => mockProvider)
-		const provider: Provider = {
+		const provider: ProviderData = {
 			id: 'p1',
 			name: 'Test Provider',
 			type: 'openai',
@@ -46,7 +46,7 @@ describe('R1 — ProviderRegistry', () => {
 			infer: async function* () {},
 		}
 		registry.register('anthropic', () => mockProvider)
-		const provider: Provider = {
+		const provider: ProviderData = {
 			id: 'p1',
 			name: 'Test Provider',
 			type: 'anthropic',
@@ -70,7 +70,7 @@ describe('R1 — ProviderRegistry', () => {
 			shouldCompact: () => false,
 			infer: async function* () {},
 		}))
-		const providerA: Provider = {
+		const providerA: ProviderData = {
 			id: 'p1',
 			name: 'Provider A',
 			type: 'openai',
@@ -81,7 +81,7 @@ describe('R1 — ProviderRegistry', () => {
 			},
 			config: {},
 		}
-		const providerB: Provider = {
+		const providerB: ProviderData = {
 			id: 'p2',
 			name: 'Provider B',
 			type: 'openai',
@@ -98,7 +98,7 @@ describe('R1 — ProviderRegistry', () => {
 	})
 
 	it('throws Error when provider type is not registered', () => {
-		const provider: Provider = {
+		const provider: ProviderData = {
 			id: 'p1',
 			name: 'Unknown Provider',
 			type: 'unknown',

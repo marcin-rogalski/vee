@@ -1,14 +1,18 @@
 import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
-import type Agent from '@domain/Agent'
+import type LoggerPort from '@application/ports/Logger.port'
+import type { AgentData } from '@domain/Agent'
 import { NotFoundError } from '@domain/errors'
 import JsonFileRepository from './JsonFileRepository'
 
 class JsonAgentRepository
-	extends JsonFileRepository<Agent, Pick<Agent, 'id' | 'name' | 'description'>>
+	extends JsonFileRepository<
+		AgentData,
+		Pick<AgentData, 'id' | 'name' | 'description'>
+	>
 	implements AgentRepositoryPort
 {
-	constructor(filePath: string) {
-		super(filePath, 'Agent', NotFoundError)
+	constructor(filePath: string, logger: LoggerPort) {
+		super(filePath, 'Agent', NotFoundError, logger)
 	}
 
 	validateItem(item: unknown): boolean {
@@ -24,19 +28,19 @@ class JsonAgentRepository
 		)
 	}
 
-	async get(id: string): Promise<Agent> {
+	async get(id: string): Promise<AgentData> {
 		const agents = await this.read()
-		const agent = agents.find((a) => a.id === id)
-		if (!agent) {
+		const data = agents.find((a) => a.id === id)
+		if (!data) {
 			throw new NotFoundError('Agent', id)
 		}
-		return agent
+		return data
 	}
 
-	async list(): Promise<Array<Pick<Agent, 'id' | 'name' | 'description'>>> {
+	async list(): Promise<Array<Pick<AgentData, 'id' | 'name' | 'description'>>> {
 		const agents = await this.read()
 		return agents.map((agent) => {
-			const result: Pick<Agent, 'id' | 'name' | 'description'> = {
+			const result: Pick<AgentData, 'id' | 'name' | 'description'> = {
 				id: agent.id,
 				name: agent.name,
 			}
@@ -49,20 +53,20 @@ class JsonAgentRepository
 
 	async listByProviderId(
 		providerId: string,
-	): Promise<Array<Pick<Agent, 'id' | 'name'>>> {
+	): Promise<Array<Pick<AgentData, 'id' | 'name'>>> {
 		const agents = await this.read()
 		return agents
 			.filter((agent) => agent.providerId === providerId)
 			.map((agent) => ({ id: agent.id, name: agent.name }))
 	}
 
-	async save(agent: Agent): Promise<void> {
+	async save(agent: AgentData): Promise<void> {
 		const agents = await this.read()
 		const existing = agents.find((a) => a.id === agent.id)
 		if (existing) {
 			Object.assign(existing, agent)
 		} else {
-			agents.push(agent)
+			agents.push(this.ensureId(agent))
 		}
 		await this.write(agents)
 	}

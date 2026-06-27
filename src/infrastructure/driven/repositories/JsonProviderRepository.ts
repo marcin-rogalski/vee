@@ -1,14 +1,15 @@
+import type LoggerPort from '@application/ports/Logger.port'
 import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
 import { NotFoundError } from '@domain/errors'
-import type Provider from '@domain/Provider'
+import type { ProviderData } from '@domain/Provider'
 import JsonFileRepository from './JsonFileRepository'
 
 class JsonProviderRepository
-	extends JsonFileRepository<Provider, Pick<Provider, 'id' | 'name'>>
+	extends JsonFileRepository<ProviderData, Pick<ProviderData, 'id' | 'name'>>
 	implements ProviderRepositoryPort
 {
-	constructor(filePath: string) {
-		super(filePath, 'Provider', NotFoundError)
+	constructor(filePath: string, logger: LoggerPort) {
+		super(filePath, 'Provider', NotFoundError, logger)
 	}
 
 	validateItem(item: unknown): boolean {
@@ -27,27 +28,27 @@ class JsonProviderRepository
 		)
 	}
 
-	async get(id: string): Promise<Provider> {
+	async get(id: string): Promise<ProviderData> {
 		const providers = await this.read()
-		const provider = providers.find((p) => p.id === id)
-		if (!provider) {
+		const data = providers.find((p) => p.id === id)
+		if (!data) {
 			throw new NotFoundError('Provider', id)
 		}
-		return provider
+		return data
 	}
 
-	async list(): Promise<Array<Pick<Provider, 'id' | 'name'>>> {
+	async list(): Promise<Array<Pick<ProviderData, 'id' | 'name'>>> {
 		const providers = await this.read()
 		return providers.map(({ id, name }) => ({ id, name }))
 	}
 
-	async save(provider: Provider): Promise<void> {
+	async save(provider: ProviderData): Promise<void> {
 		const providers = await this.read()
 		const existing = providers.find((p) => p.id === provider.id)
 		if (existing) {
 			Object.assign(existing, provider)
 		} else {
-			providers.push(provider)
+			providers.push(this.ensureId(provider))
 		}
 		await this.write(providers)
 	}

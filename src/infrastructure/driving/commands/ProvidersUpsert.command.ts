@@ -1,10 +1,10 @@
 import type LoggerPort from '@application/ports/Logger.port'
 import type ProviderRegistryPort from '@application/ports/ProviderRegistry.port'
-import type Provider from '@domain/Provider'
+import type { ProviderData } from '@domain/Provider'
 import { Command } from 'commander'
 
 export type ProvidersUpsertCommandDeps = {
-	providerUpsertUseCase: { execute(provider: Provider): Promise<void> }
+	providerUpsertUseCase: { execute(provider: ProviderData): Promise<void> }
 	providerRegistry: ProviderRegistryPort
 	logger: LoggerPort
 }

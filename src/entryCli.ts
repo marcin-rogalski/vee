@@ -115,6 +115,7 @@ cli.register(sessions)
 cli.register(
 	createInferCommand({
 		inferUseCase: compositionRoot.infer,
+		eventBus: compositionRoot.eventBus,
 		logger: compositionRoot.logger,
 	}),
 )

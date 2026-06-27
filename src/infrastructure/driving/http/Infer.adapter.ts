@@ -1,8 +1,8 @@
-import type InferOrchestratorUseCase from '@application/usecases/InferOrchestrator.usecase'
+import type InferHandler from '@infrastructure/driving/handlers/InferHandler'
 import ExpressEndpoint from '@infrastructure/utilities/ExpressEndpoint.adapter'
 import z from 'zod'
 
-const Infer = (useCase: InferOrchestratorUseCase) =>
+const Infer = (handler: InferHandler) =>
 	ExpressEndpoint.createEndpoint(
 		'POST',
 		'/infer',
@@ -14,7 +14,7 @@ const Infer = (useCase: InferOrchestratorUseCase) =>
 			}),
 		},
 		async (_params, body) => {
-			await useCase.execute(body.prompt, body.agentId, body.sessionId)
+			await handler.execute(body.prompt, body.agentId, body.sessionId)
 		},
 	)
 

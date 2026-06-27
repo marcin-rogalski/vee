@@ -1,10 +1,10 @@
 import type LoggerPort from '@application/ports/Logger.port'
-import type Agent from '@domain/Agent'
+import type { AgentData } from '@domain/Agent'
 import { Command } from 'commander'
 
 export type AgentsListCommandDeps = {
 	agentListUseCase: {
-		execute(): Promise<Array<Pick<Agent, 'id' | 'name' | 'description'>>>
+		execute(): Promise<Array<Pick<AgentData, 'id' | 'name' | 'description'>>>
 	}
 	logger: LoggerPort
 }

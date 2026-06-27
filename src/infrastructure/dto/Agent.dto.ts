@@ -1,10 +1,5 @@
-interface AgentDto {
-	id: string
-	name: string
-	description?: string
-	providerId: string
-	providerOverrides: Record<string, unknown>
-	toolIds: string[]
-}
+import type { AgentData } from '@domain/Agent'
+
+type AgentDto = AgentData
 
 export default AgentDto

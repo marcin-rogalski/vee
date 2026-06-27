@@ -1,10 +1,10 @@
 import type ContextService from '@application/ports/ContextService.port'
-import type Agent from '@domain/Agent'
-import type ConversationEntry from '@domain/ConversationEntry'
+import type { AgentData } from '@domain/Agent'
+import type { ConversationEntry } from '@domain/ConversationEntry'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import BuildContextUseCase from './BuildContext.usecase'
 
-const mockAgent: Agent = {
+const mockAgent: AgentData = {
 	id: 'agent-1',
 	name: 'Test Agent',
 	systemPrompt: 'You are a test agent.',

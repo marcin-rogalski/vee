@@ -1,12 +1,14 @@
 import type SessionRepositoryPort from '@application/ports/SessionRepository.port'
+import type { SessionData } from '@domain/Session'
 
 class SessionListUseCase {
 	constructor(readonly sessionRepository: SessionRepositoryPort) {}
 
-	async execute(): Promise<Array<Pick<Session, 'id' | 'name' | 'agentId'>>> {
+	async execute(): Promise<
+		Array<Pick<SessionData, 'id' | 'name' | 'agentId'>>
+	> {
 		return await this.sessionRepository.list()
 	}
 }
 
-import type Session from '@domain/Session'
 export default SessionListUseCase

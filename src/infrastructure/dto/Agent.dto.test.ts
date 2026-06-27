@@ -6,6 +6,7 @@ describe('DTO — AgentDto', () => {
 		const agent: AgentDto = {
 			id: 'agent-123',
 			name: 'Test Agent',
+			systemPrompt: 'You are helpful.',
 			providerId: 'provider-1',
 			providerOverrides: {},
 			toolIds: [],
@@ -18,6 +19,7 @@ describe('DTO — AgentDto', () => {
 		const agent: AgentDto = {
 			id: 'agent-123',
 			name: 'Test Agent',
+			systemPrompt: 'You are helpful.',
 			providerId: 'provider-1',
 			providerOverrides: {},
 			toolIds: [],
@@ -30,6 +32,7 @@ describe('DTO — AgentDto', () => {
 		const agent: AgentDto = {
 			id: 'agent-123',
 			name: 'Test Agent',
+			systemPrompt: 'You are helpful.',
 			providerId: 'provider-1',
 			providerOverrides: {},
 			toolIds: [],
@@ -42,6 +45,7 @@ describe('DTO — AgentDto', () => {
 		const agent: AgentDto = {
 			id: 'agent-123',
 			name: 'Test Agent',
+			systemPrompt: 'You are helpful.',
 			providerId: 'provider-1',
 			providerOverrides: { apiKey: 'secret' },
 			toolIds: [],
@@ -54,6 +58,7 @@ describe('DTO — AgentDto', () => {
 		const agent: AgentDto = {
 			id: 'agent-123',
 			name: 'Test Agent',
+			systemPrompt: 'You are helpful.',
 			providerId: 'provider-1',
 			providerOverrides: {},
 			toolIds: ['tool-1', 'tool-2'],
@@ -66,6 +71,7 @@ describe('DTO — AgentDto', () => {
 		const agentWithDescription: AgentDto = {
 			id: 'agent-123',
 			name: 'Test Agent',
+			systemPrompt: 'You are helpful.',
 			description: 'This is a test agent',
 			providerId: 'provider-1',
 			providerOverrides: {},
@@ -77,6 +83,7 @@ describe('DTO — AgentDto', () => {
 		const agentWithoutDescription: AgentDto = {
 			id: 'agent-123',
 			name: 'Test Agent',
+			systemPrompt: 'You are helpful.',
 			providerId: 'provider-1',
 			providerOverrides: {},
 			toolIds: [],
@@ -89,6 +96,7 @@ describe('DTO — AgentDto', () => {
 		const agent: AgentDto = {
 			id: 'agent-123',
 			name: 'Test Agent',
+			systemPrompt: 'You are helpful.',
 			providerId: 'provider-1',
 			providerOverrides: {
 				apiKey: 'secret',
@@ -115,6 +123,7 @@ describe('DTO — AgentDto', () => {
 		const agent: AgentDto = {
 			id: 'agent-123',
 			name: 'Test Agent',
+			systemPrompt: 'You are helpful.',
 			providerId: 'provider-1',
 			providerOverrides: {},
 			toolIds: [],
@@ -127,6 +136,7 @@ describe('DTO — AgentDto', () => {
 		const agent: AgentDto = {
 			id: 'agent-123',
 			name: 'Test Agent',
+			systemPrompt: 'You are helpful.',
 			providerId: 'provider-1',
 			providerOverrides: {},
 			toolIds: ['tool-1', 'tool-2', 'tool-3', 'tool-4', 'tool-5'],
@@ -139,6 +149,7 @@ describe('DTO — AgentDto', () => {
 		const agent: AgentDto = {
 			id: 'agent-123',
 			name: 'Test Agent',
+			systemPrompt: 'You are helpful.',
 			description: 'Test description',
 			providerId: 'provider-1',
 			providerOverrides: { key: 'value' },

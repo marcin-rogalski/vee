@@ -1,8 +1,16 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type LoggerPort from '@application/ports/Logger.port'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import JsonSessionRepository from './JsonSessionRepository'
+
+const noopLogger: LoggerPort = {
+	info: () => {},
+	warn: () => {},
+	error: () => {},
+	debug: () => {},
+}
 
 describe('JsonSessionRepository', () => {
 	let tmpDir: string
@@ -10,7 +18,7 @@ describe('JsonSessionRepository', () => {
 
 	beforeEach(async () => {
 		tmpDir = await mkdtemp(join(tmpdir(), 'vee-test-'))
-		repo = new JsonSessionRepository(join(tmpDir, 'sessions.json'))
+		repo = new JsonSessionRepository(join(tmpDir, 'sessions.json'), noopLogger)
 	})
 
 	afterEach(async () => {

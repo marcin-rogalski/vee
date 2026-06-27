@@ -1,18 +1,18 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: it is expected in tests */
-import type InferOrchestratorUseCase from '@application/usecases/InferOrchestrator.usecase'
+import type InferHandler from '@infrastructure/driving/handlers/InferHandler'
 import type { RequestHandler } from 'express'
 import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest'
 import Infer from './Infer.adapter'
 
 describe('Infer', () => {
-	let mockUseCase: InferOrchestratorUseCase
+	let mockHandler: InferHandler
 	let endpoint: import('@infrastructure/utilities/ExpressEndpoint.adapter').IEndpoint
 
 	beforeEach(() => {
-		mockUseCase = {
+		mockHandler = {
 			execute: vi.fn().mockResolvedValue(undefined),
-		} as unknown as InferOrchestratorUseCase
-		endpoint = Infer(mockUseCase)
+		} as unknown as InferHandler
+		endpoint = Infer(mockHandler)
 	})
 
 	it('returns IEndpoint with correct method and path', () => {
@@ -77,11 +77,11 @@ describe('Infer', () => {
 		closeCallback()
 		await promise
 
-		expect(mockUseCase.execute).toHaveBeenCalledWith('hi', 'a1', 's1')
+		expect(mockHandler.execute).toHaveBeenCalledWith('hi', 'a1', 's1')
 	})
 
 	it('returns 204 when useCase returns void', async () => {
-		;(mockUseCase.execute as Mock).mockResolvedValue(undefined)
+		;(mockHandler.execute as Mock).mockResolvedValue(undefined)
 
 		const handlers: RequestHandler[] = endpoint.toHandlers()
 		const dispatchMiddleware = handlers[1]
@@ -112,7 +112,7 @@ describe('Infer', () => {
 	})
 
 	it('returns 500 when useCase throws', async () => {
-		;(mockUseCase.execute as Mock).mockRejectedValue(
+		;(mockHandler.execute as Mock).mockRejectedValue(
 			new Error('Inference failed'),
 		)
 

@@ -1,9 +1,9 @@
 import type LoggerPort from '@application/ports/Logger.port'
-import type Agent from '@domain/Agent'
+import type { AgentData } from '@domain/Agent'
 import { Command } from 'commander'
 
 export type AgentsUpsertCommandDeps = {
-	agentUpsertUseCase: { execute(agent: Agent): Promise<void> }
+	agentUpsertUseCase: { execute(agent: AgentData): Promise<void> }
 	logger: LoggerPort
 }
 
@@ -46,14 +46,17 @@ export function createAgentsUpsertCommand(
 					providerOverrides[kv.slice(0, eqIndex)] = kv.slice(eqIndex + 1)
 				}
 
-				const agent: Agent = {
+				const agent: AgentData = {
 					id: id ?? '',
 					name,
-					description: description ?? undefined,
 					systemPrompt: prompt,
 					providerId,
 					providerOverrides,
 					toolIds: toolId,
+				}
+
+				if (description !== undefined) {
+					agent.description = description
 				}
 
 				await deps.agentUpsertUseCase.execute(agent)

@@ -16,6 +16,7 @@ class NodeEnvironment {
 		SESSION_REPOSITORY_FILE: z.string().default('sessions.json'),
 		CONTEXT_REPOSITORY_FILE: z.string().default('context.json'),
 		CHAT_MESSAGE_REPOSITORY_FILE: z.string().default('chat-messages.json'),
+		REPL_STATE_FILE: z.string().default('repl-state.json'),
 
 		// ports
 		SERVER_PORT: z.coerce.number().default(3000),
@@ -33,6 +34,7 @@ class NodeEnvironment {
 	public readonly sessionRepositoryPath: string
 	public readonly contextRepositoryPath: string
 	public readonly chatMessageRepositoryPath: string
+	public readonly replStatePath: string
 
 	//ports
 	public readonly serverPort: number
@@ -67,6 +69,7 @@ class NodeEnvironment {
 			env.CONFIG_FOLDER,
 			env.CHAT_MESSAGE_REPOSITORY_FILE,
 		)
+		this.replStatePath = join(env.CONFIG_FOLDER, env.REPL_STATE_FILE)
 
 		// ports
 		this.serverPort = env.SERVER_PORT

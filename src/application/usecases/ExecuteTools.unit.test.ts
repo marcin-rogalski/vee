@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: test mocks require any casts */
 import type ToolPort from '@application/ports/Tool.port'
-import type ConversationEntry from '@domain/ConversationEntry'
+import type { ConversationEntry } from '@domain/ConversationEntry'
+import { isToolResult } from '@domain/ConversationEntry'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ExecuteToolsUseCase from './ExecuteTools.usecase'
 
@@ -34,7 +35,9 @@ describe('ExecuteToolsUseCase', () => {
 		expect(results).toHaveLength(1)
 		const entry = results[0] as ConversationEntry
 		expect(entry.role).toBe('system')
-		expect((entry as any).name).toBe('test-tool')
+		if (isToolResult(entry)) {
+			expect(entry.name).toBe('test-tool')
+		}
 		expect(entry.content).toBe('tool result')
 	})
 
@@ -126,7 +129,13 @@ describe('ExecuteToolsUseCase', () => {
 		)
 
 		expect(results).toHaveLength(2)
-		expect((results[0] as any).name).toBe('test-tool')
-		expect((results[1] as any).name).toBe('second-tool')
+		const first = results[0]
+		const second = results[1]
+		if (first && isToolResult(first)) {
+			expect(first.name).toBe('test-tool')
+		}
+		if (second && isToolResult(second)) {
+			expect(second.name).toBe('second-tool')
+		}
 	})
 })

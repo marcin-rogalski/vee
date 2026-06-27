@@ -1,10 +1,18 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type LoggerPort from '@application/ports/Logger.port'
 import type { ChatMessage } from '@domain/ChatMessage'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import JsonChatMessageRepository from '../JsonChatMessageRepository'
 import CachedChatMessageRepository from './CachedChatMessageRepository'
+
+const noopLogger: LoggerPort = {
+	info: () => {},
+	warn: () => {},
+	error: () => {},
+	debug: () => {},
+}
 
 describe('CachedChatMessageRepository', () => {
 	let tmpDir: string
@@ -16,6 +24,7 @@ describe('CachedChatMessageRepository', () => {
 		tmpDir = await mkdtemp(join(tmpdir(), 'vee-test-'))
 		const jsonRepo = new JsonChatMessageRepository(
 			join(tmpDir, 'chat-messages.json'),
+			noopLogger,
 		)
 		repo = new CachedChatMessageRepository(jsonRepo, TTL)
 	})
@@ -78,7 +87,10 @@ describe('CachedChatMessageRepository', () => {
 
 	it('cache expires after TTL', async () => {
 		const shortLivedRepo = new CachedChatMessageRepository(
-			new JsonChatMessageRepository(join(tmpDir, 'chat-messages2.json')),
+			new JsonChatMessageRepository(
+				join(tmpDir, 'chat-messages2.json'),
+				noopLogger,
+			),
 			100,
 		)
 

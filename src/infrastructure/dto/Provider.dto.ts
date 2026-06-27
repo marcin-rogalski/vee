@@ -1,5 +1,5 @@
-import type Provider from '@domain/Provider'
+import type { ProviderData } from '@domain/Provider'
 
-type ProviderDto = Provider
+type ProviderDto = ProviderData
 
 export default ProviderDto

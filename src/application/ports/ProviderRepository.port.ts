@@ -1,9 +1,9 @@
-import type Provider from '@domain/Provider'
+import type { ProviderData } from '@domain/Provider'
 
 interface ProviderRepositoryPort {
-	get(id: string): Promise<Provider>
-	list(): Promise<Array<Pick<Provider, 'id' | 'name'>>>
-	save(provider: Provider): Promise<void>
+	get(id: string): Promise<ProviderData>
+	list(): Promise<Array<Pick<ProviderData, 'id' | 'name'>>>
+	save(provider: ProviderData): Promise<void>
 	delete(id: string): Promise<void>
 }
 

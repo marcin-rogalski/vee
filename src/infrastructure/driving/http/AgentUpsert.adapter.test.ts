@@ -62,7 +62,7 @@ describe('AgentUpsert', () => {
 			description: 'A test agent',
 			systemPrompt: 'You are helpful',
 			providerId: 'openai',
-			providerConfiguration: { model: 'gpt-4' },
+			providerOverrides: { model: 'gpt-4' },
 			toolIds: ['tool-1'],
 		}
 
@@ -82,7 +82,17 @@ describe('AgentUpsert', () => {
 		const promise = dispatchMiddleware?.(mockReq, mockRes, next)
 		await promise
 
-		expect(mockUseCase.execute).toHaveBeenCalledWith(agentBody)
+		expect(mockUseCase.execute).toHaveBeenCalledWith(
+			expect.objectContaining({
+				id: agentBody.id,
+				name: agentBody.name,
+				description: agentBody.description,
+				systemPrompt: agentBody.systemPrompt,
+				providerId: agentBody.providerId,
+				providerOverrides: agentBody.providerOverrides,
+				toolIds: agentBody.toolIds,
+			}),
+		)
 	})
 
 	it('returns 204 No Content for void handler', async () => {

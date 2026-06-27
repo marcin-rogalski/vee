@@ -2,7 +2,7 @@ import type ProviderPort from '@application/ports/Provider.port'
 import type ProviderRegistryPort from '@application/ports/ProviderRegistry.port'
 import { NotFoundError } from '@domain/errors'
 import type { JsonSchemaObject } from '@domain/JsonSchema'
-import type Provider from '@domain/Provider'
+import type { ProviderData } from '@domain/Provider'
 
 class ProviderRegistry implements ProviderRegistryPort {
 	private readonly providerFactories: Record<string, () => ProviderPort> = {}
@@ -19,7 +19,11 @@ class ProviderRegistry implements ProviderRegistryPort {
 		}
 	}
 
-	resolve(provider: Provider): ProviderPort {
+	listTypes(): string[] {
+		return Object.keys(this.providerFactories)
+	}
+
+	resolve(provider: ProviderData): ProviderPort {
 		const factory = this.providerFactories[provider.type]
 		if (!factory) {
 			throw new NotFoundError('Provider type', provider.type)

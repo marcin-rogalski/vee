@@ -64,6 +64,8 @@ describe('EventsSSE', () => {
 			setHeader: vi.fn(),
 			write: vi.fn(),
 			end: vi.fn(),
+			status: vi.fn().mockReturnThis(),
+			json: vi.fn(),
 		} as any
 
 		// Create a proper async iterator that immediately returns done
@@ -111,6 +113,8 @@ describe('EventsSSE', () => {
 			setHeader: vi.fn(),
 			write: vi.fn(),
 			end: vi.fn(),
+			status: vi.fn().mockReturnThis(),
+			json: vi.fn(),
 		} as any
 		handlers[1]?.(mockReq, mockRes, vi.fn())
 

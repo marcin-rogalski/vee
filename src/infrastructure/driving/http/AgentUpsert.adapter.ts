@@ -1,24 +1,27 @@
 import type AgentUpsertUseCase from '@application/usecases/AgentUpsert.usecase'
+import { Agent, type AgentData } from '@domain/Agent'
 import ExpressEndpoint from '@infrastructure/utilities/ExpressEndpoint.adapter'
-import z from 'zod'
 
 const AgentUpsert = (useCase: AgentUpsertUseCase) =>
 	ExpressEndpoint.createEndpoint(
 		'POST',
 		'/agents',
 		{
-			body: z.object({
-				id: z.string(),
-				name: z.string(),
-				description: z.string().optional(),
-				systemPrompt: z.string(),
-				providerId: z.string(),
-				providerOverrides: z.record(z.string(), z.unknown()),
-				toolIds: z.array(z.string()),
-			}),
+			body: Agent.schema,
 		},
 		async (_params, body) => {
-			await useCase.execute(body)
+			const agent: AgentData = {
+				id: body.id,
+				name: body.name,
+				systemPrompt: body.systemPrompt,
+				providerId: body.providerId,
+				providerOverrides: body.providerOverrides,
+				toolIds: body.toolIds,
+				...(body.description !== undefined && {
+					description: body.description,
+				}),
+			}
+			await useCase.execute(agent)
 		},
 	)
 

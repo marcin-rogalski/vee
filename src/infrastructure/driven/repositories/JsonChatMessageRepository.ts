@@ -1,4 +1,5 @@
 import type ChatMessageRepositoryPort from '@application/ports/ChatMessageRepository.port'
+import type LoggerPort from '@application/ports/Logger.port'
 import type { ChatMessage } from '@domain/ChatMessage'
 import { NotFoundError } from '@domain/errors'
 import JsonFileRepository from './JsonFileRepository'
@@ -7,8 +8,8 @@ class JsonChatMessageRepository
 	extends JsonFileRepository<ChatMessage>
 	implements ChatMessageRepositoryPort
 {
-	constructor(filePath: string) {
-		super(filePath, 'ChatMessage', NotFoundError)
+	constructor(filePath: string, logger: LoggerPort) {
+		super(filePath, 'ChatMessage', NotFoundError, logger)
 	}
 
 	validateItem(item: unknown): boolean {
@@ -25,8 +26,13 @@ class JsonChatMessageRepository
 		)
 	}
 
-	async get(_id: string): Promise<ChatMessage> {
-		throw new Error('Not implemented - use getBySession instead')
+	async get(id: string): Promise<ChatMessage> {
+		const messages = await this.read()
+		const message = messages.find((m) => m.id === id)
+		if (!message) {
+			throw new NotFoundError('ChatMessage', id)
+		}
+		return message
 	}
 
 	async list(): Promise<Array<ChatMessage>> {
@@ -60,8 +66,10 @@ class JsonChatMessageRepository
 		await this.create(item)
 	}
 
-	async delete(_id: string): Promise<void> {
-		throw new Error('Not implemented - use deleteBySession instead')
+	async delete(id: string): Promise<void> {
+		const messages = await this.read()
+		const filtered = messages.filter((m) => m.id !== id)
+		await this.write(filtered)
 	}
 
 	async deleteBySession(sessionId: string): Promise<void> {

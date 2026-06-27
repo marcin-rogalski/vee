@@ -2,7 +2,7 @@ import type AgentRepositoryPort from '@application/ports/AgentRepository.port'
 import type EventBusPort from '@application/ports/EventBus.port'
 import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
 import type ToolRegistryPort from '@application/ports/ToolRegistry.port'
-import type Agent from '@domain/Agent'
+import type { AgentData } from '@domain/Agent'
 import type { JsonSchemaObject } from '@domain/JsonSchema'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -222,7 +222,7 @@ describe('UC3 — AgentUpsert use case', () => {
 	it('handles empty agent object', async () => {
 		const saveSpy = vi.spyOn(mockAgentRepository, 'save')
 		const publishSpy = vi.spyOn(mockEventBus, 'publish')
-		const emptyAgent: Agent = {
+		const emptyAgent: AgentData = {
 			id: '',
 			name: '',
 			systemPrompt: '',

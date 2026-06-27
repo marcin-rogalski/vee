@@ -1,11 +1,11 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: test mocks require any casts */
 import type ContextRepositoryPort from '@application/ports/ContextRepository.port'
-import type Agent from '@domain/Agent'
-import type ConversationEntry from '@domain/ConversationEntry'
+import type { AgentData } from '@domain/Agent'
+import type { ConversationEntry } from '@domain/ConversationEntry'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ContextServiceAdapter from './ContextService.adapter'
 
-const mockAgent: Agent = {
+const mockAgent: AgentData = {
 	id: 'agent-1',
 	name: 'Test Agent',
 	systemPrompt: 'You are a helpful assistant.',

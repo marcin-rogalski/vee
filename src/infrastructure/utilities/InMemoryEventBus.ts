@@ -6,7 +6,7 @@ class InMemoryEventBus implements EventBusPort {
 
 	publish(envelope: Envelope): void {
 		for (const subscriber of this.subscribers) {
-			subscriber.resolve(envelope)
+			subscriber.enqueue(envelope)
 		}
 	}
 
@@ -16,7 +16,7 @@ class InMemoryEventBus implements EventBusPort {
 		this.subscribers.push(subscriber)
 
 		const unsubscribe = () => {
-			subscriber.reject(new Error('Unsubscribed'))
+			subscriber.close()
 
 			const index = this.subscribers.indexOf(subscriber)
 			if (index !== -1) {
@@ -34,26 +34,43 @@ class InMemoryEventBus implements EventBusPort {
 
 export default InMemoryEventBus
 
+/** Queue-based subscriber that never drops events.
+ *
+ * Events are buffered in a queue. The async generator drains the queue
+ * before waiting for the next signal, so rapid publishes don't lose data.
+ */
 class Subscriber {
-	private resolvable: PromiseWithResolvers<Envelope> = Promise.withResolvers()
+	private queue: Envelope[] = []
+	private closed = false
+	private resolvable: PromiseWithResolvers<void> = Promise.withResolvers()
 
-	resolve(envelope: Envelope) {
-		this.resolvable.resolve(envelope)
+	enqueue(envelope: Envelope): void {
+		if (this.closed) {
+			return
+		}
+		this.queue.push(envelope)
+		// Resolve the waiter — the generator will drain the queue
+		this.resolvable.resolve(undefined)
 		this.resolvable = Promise.withResolvers()
 	}
 
-	reject(error: Error) {
-		this.resolvable.reject(error)
+	close(): void {
+		this.closed = true
+		this.resolvable.resolve(undefined)
 	}
 
 	async *generate(): AsyncGenerator<Envelope> {
-		try {
-			while (true) {
-				yield await this.resolvable.promise
-				this.resolvable = Promise.withResolvers()
+		while (!this.closed) {
+			// Wait until at least one event is enqueued
+			await this.resolvable.promise
+
+			// Drain all buffered events before waiting again
+			while (this.queue.length > 0) {
+				const envelope = this.queue.shift()
+				if (envelope) {
+					yield envelope
+				}
 			}
-		} catch (_error) {
-			// gracefully exit the loop
 		}
 	}
 }

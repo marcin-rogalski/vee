@@ -2,7 +2,7 @@ import type EventBusPort from '@application/ports/EventBus.port'
 import type ProviderRepositoryPort from '@application/ports/ProviderRepository.port'
 import type SchemaValidationService from '@application/ports/SchemaValidationService.port'
 import { ValidationError } from '@domain/errors'
-import type Provider from '@domain/Provider'
+import type { ProviderData } from '@domain/Provider'
 
 class ProviderUpsertUseCase {
 	constructor(
@@ -11,7 +11,7 @@ class ProviderUpsertUseCase {
 		readonly schemaValidationService: SchemaValidationService,
 	) {}
 
-	async execute(provider: Provider): Promise<void> {
+	async execute(provider: ProviderData): Promise<void> {
 		if (provider.configSchema) {
 			try {
 				this.schemaValidationService.validate(

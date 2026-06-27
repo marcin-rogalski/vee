@@ -1,5 +1,5 @@
-import type Agent from '@domain/Agent'
-import type ConversationEntry from '@domain/ConversationEntry'
+import type { AgentData } from '@domain/Agent'
+import type { ConversationEntry } from '@domain/ConversationEntry'
 
 /** Service that wraps ContextRepository with domain behavior.
  *
@@ -8,7 +8,7 @@ import type ConversationEntry from '@domain/ConversationEntry'
  * - compact() — checks provider.shouldCompact() + replaces context
  */
 interface ContextService {
-	build(agent: Agent, sessionId: string): Promise<Array<ConversationEntry>>
+	build(agent: AgentData, sessionId: string): Promise<Array<ConversationEntry>>
 	append(sessionId: string, ...entries: Array<ConversationEntry>): Promise<void>
 	compact(
 		sessionId: string,

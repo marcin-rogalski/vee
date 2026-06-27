@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type ConversationEntry from './ConversationEntry'
+import type { ConversationEntry } from './ConversationEntry'
 
 describe('D4 — ConversationEntry discriminated union', () => {
 	// Valid user entry

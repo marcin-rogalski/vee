@@ -1,12 +1,12 @@
-import type Agent from '@domain/Agent'
+import type { AgentData } from '@domain/Agent'
 
 interface AgentRepositoryPort {
-	get(id: string): Promise<Agent>
-	list(): Promise<Array<Pick<Agent, 'id' | 'name' | 'description'>>>
+	get(id: string): Promise<AgentData>
+	list(): Promise<Array<Pick<AgentData, 'id' | 'name' | 'description'>>>
 	listByProviderId(
 		providerId: string,
-	): Promise<Array<Pick<Agent, 'id' | 'name'>>>
-	save(agent: Agent): Promise<void>
+	): Promise<Array<Pick<AgentData, 'id' | 'name'>>>
+	save(agent: AgentData): Promise<void>
 	delete(id: string): Promise<void>
 }
 

@@ -1,203 +1,236 @@
 import { describe, expect, it } from 'vitest'
-import type Agent from './Agent'
+import Agent, { type AgentData } from './Agent'
+import { ValidationError } from './errors'
 
-describe('D1 — Agent type shape', () => {
-	const validAgent: Agent = {
-		id: 'agent-1',
-		name: 'Test Agent',
-		systemPrompt: 'You are helpful.',
-		providerId: 'provider-1',
-		providerOverrides: { apiKey: 'key' },
-		toolIds: ['readFile', 'writeFile'],
-	}
+describe('Agent — constructor', () => {
+	it('creates agent with required fields', () => {
+		const agent = new Agent({
+			name: 'Test Agent',
+			systemPrompt: 'You are helpful.',
+			providerId: 'provider-1',
+		})
 
-	it('creates valid Agent object with all required fields', () => {
-		expect(validAgent.id).toBe('agent-1')
-		expect(validAgent.name).toBe('Test Agent')
-		expect(validAgent.systemPrompt).toBe('You are helpful.')
-		expect(validAgent.providerId).toBe('provider-1')
-		expect(validAgent.providerOverrides).toEqual({ apiKey: 'key' })
-		expect(validAgent.toolIds).toEqual(['readFile', 'writeFile'])
+		expect(agent.id).toBeDefined()
+		expect(agent.name).toBe('Test Agent')
+		expect(agent.systemPrompt).toBe('You are helpful.')
+		expect(agent.providerId).toBe('provider-1')
+		expect(agent.providerOverrides).toEqual({})
+		expect(agent.toolIds).toEqual([])
+		expect(agent.description).toBeUndefined()
 	})
 
-	it('accepts optional description field', () => {
-		const agentWithDescription: Agent = {
-			...validAgent,
+	it('accepts all optional fields', () => {
+		const agent = new Agent({
+			id: 'agent-1',
+			name: 'Test Agent',
+			systemPrompt: 'You are helpful.',
+			providerId: 'provider-1',
 			description: 'A test agent',
-		}
-		expect(agentWithDescription.description).toBe('A test agent')
+			providerOverrides: { apiKey: 'key' },
+			toolIds: ['readFile', 'writeFile'],
+		})
+
+		expect(agent.id).toBe('agent-1')
+		expect(agent.description).toBe('A test agent')
+		expect(agent.providerOverrides).toEqual({ apiKey: 'key' })
+		expect(agent.toolIds).toEqual(['readFile', 'writeFile'])
 	})
 
-	it('accepts Agent without description (undefined)', () => {
-		const agentWithoutDescription: Agent = validAgent
-		expect(agentWithoutDescription.description).toBeUndefined()
-	})
+	it('generates random ID when not provided', () => {
+		const agent1 = new Agent({
+			name: 'A',
+			systemPrompt: 'P',
+			providerId: 'P1',
+		})
+		const agent2 = new Agent({
+			name: 'B',
+			systemPrompt: 'P',
+			providerId: 'P1',
+		})
 
-	it('has all required keys present on valid object', () => {
-		const keys = Object.keys(validAgent).sort()
-		const requiredKeys = [
-			'id',
-			'name',
-			'systemPrompt',
-			'providerId',
-			'providerOverrides',
-			'toolIds',
-		].sort()
-		expect(keys).toEqual(requiredKeys)
-	})
-
-	it('has description key absent when not provided', () => {
-		expect(Object.hasOwn(validAgent, 'description')).toBe(false)
+		expect(agent1.id).not.toBe(agent2.id)
 	})
 })
 
-describe('D1 — Agent edge cases', () => {
-	const baseAgent: Agent = {
-		id: 'agent-1',
-		name: 'Test Agent',
-		systemPrompt: 'You are helpful.',
-		providerId: 'provider-1',
-		providerOverrides: { apiKey: 'key' },
-		toolIds: ['readFile', 'writeFile'],
-	}
-
-	it('accepts Agent with empty toolIds array', () => {
-		const agentWithEmptyTools: Agent = {
-			...baseAgent,
-			toolIds: [],
-		}
-		expect(agentWithEmptyTools.toolIds).toEqual([])
-		expect(Array.isArray(agentWithEmptyTools.toolIds)).toBe(true)
+describe('Agent — Zod validation', () => {
+	it('throws ValidationError for empty name', () => {
+		expect(
+			() => new Agent({ name: '', systemPrompt: 'P', providerId: 'P1' }),
+		).toThrow(ValidationError)
 	})
 
-	it('accepts Agent with empty string for id', () => {
-		const agentWithEmptyId: Agent = {
-			...baseAgent,
-			id: '',
-		}
-		expect(agentWithEmptyId.id).toBe('')
+	it('throws ValidationError for whitespace-only name', () => {
+		expect(
+			() => new Agent({ name: '   ', systemPrompt: 'P', providerId: 'P1' }),
+		).toThrow(ValidationError)
 	})
 
-	it('accepts Agent with blank string (whitespace only) for id', () => {
-		const agentWithBlankId: Agent = {
-			...baseAgent,
-			id: '   ',
-		}
-		expect(agentWithBlankId.id).toBe('   ')
+	it('throws ValidationError for empty systemPrompt', () => {
+		expect(
+			() => new Agent({ name: 'A', systemPrompt: '', providerId: 'P1' }),
+		).toThrow(ValidationError)
 	})
 
-	it('accepts Agent with empty string for name', () => {
-		const agentWithEmptyName: Agent = {
-			...baseAgent,
-			name: '',
-		}
-		expect(agentWithEmptyName.name).toBe('')
+	it('throws ValidationError for empty providerId', () => {
+		expect(
+			() => new Agent({ name: 'A', systemPrompt: 'P', providerId: '' }),
+		).toThrow(ValidationError)
 	})
 
-	it('accepts Agent with blank string (whitespace only) for name', () => {
-		const agentWithBlankName: Agent = {
-			...baseAgent,
-			name: '   ',
-		}
-		expect(agentWithBlankName.name).toBe('   ')
+	it('throws ValidationError for whitespace-only providerId', () => {
+		expect(
+			() => new Agent({ name: 'A', systemPrompt: 'P', providerId: '  ' }),
+		).toThrow(ValidationError)
 	})
 
-	it('accepts Agent with oversized id string (10000 characters)', () => {
-		const oversizedId = 'a'.repeat(10000)
-		const agentWithOversizedId: Agent = {
-			...baseAgent,
-			id: oversizedId,
-		}
-		expect(agentWithOversizedId.id.length).toBe(10000)
+	it('trims name and providerId', () => {
+		const agent = new Agent({
+			name: '  Test Agent  ',
+			systemPrompt: 'P',
+			providerId: '  P1  ',
+		})
+
+		expect(agent.name).toBe('Test Agent')
+		expect(agent.providerId).toBe('P1')
+	})
+})
+
+describe('Agent — behavior methods', () => {
+	const createAgent = () =>
+		new Agent({
+			name: 'Test Agent',
+			systemPrompt: 'You are helpful.',
+			providerId: 'provider-1',
+		})
+
+	it('rename changes the name', () => {
+		const agent = createAgent()
+		agent.rename('New Name')
+		expect(agent.name).toBe('New Name')
 	})
 
-	it('accepts Agent with oversized name string (10000 characters)', () => {
-		const oversizedName = 'b'.repeat(10000)
-		const agentWithOversizedName: Agent = {
-			...baseAgent,
-			name: oversizedName,
-		}
-		expect(agentWithOversizedName.name.length).toBe(10000)
+	it('rename trims whitespace', () => {
+		const agent = createAgent()
+		agent.rename('  New Name  ')
+		expect(agent.name).toBe('New Name')
 	})
 
-	it('accepts Agent with oversized systemPrompt string (50000 characters)', () => {
-		const oversizedPrompt = 'c'.repeat(50000)
-		const agentWithOversizedPrompt: Agent = {
-			...baseAgent,
-			systemPrompt: oversizedPrompt,
-		}
-		expect(agentWithOversizedPrompt.systemPrompt.length).toBe(50000)
+	it('rename throws for empty name', () => {
+		const agent = createAgent()
+		expect(() => agent.rename('')).toThrow(ValidationError)
 	})
 
-	it('accepts Agent with oversized providerId string (10000 characters)', () => {
-		const oversizedProviderId = 'd'.repeat(10000)
-		const agentWithOversizedProviderId: Agent = {
-			...baseAgent,
-			providerId: oversizedProviderId,
-		}
-		expect(agentWithOversizedProviderId.providerId.length).toBe(10000)
+	it('rename throws for whitespace-only name', () => {
+		const agent = createAgent()
+		expect(() => agent.rename('   ')).toThrow(ValidationError)
 	})
 
-	it('accepts Agent with unexpected extra keys in providerOverrides', () => {
-		const agentWithExtraKeys: Agent = {
-			...baseAgent,
-			providerOverrides: {
-				apiKey: 'key',
-				region: 'us-east-1',
-				timeout: 30000,
-				retries: 3,
-			},
-		}
-		expect(agentWithExtraKeys.providerOverrides).toHaveProperty('apiKey', 'key')
-		expect(agentWithExtraKeys.providerOverrides).toHaveProperty(
-			'region',
-			'us-east-1',
-		)
-		expect(agentWithExtraKeys.providerOverrides).toHaveProperty(
-			'timeout',
-			30000,
-		)
-		expect(agentWithExtraKeys.providerOverrides).toHaveProperty('retries', 3)
+	it('setDescription sets the description', () => {
+		const agent = createAgent()
+		agent.setDescription('A description')
+		expect(agent.description).toBe('A description')
 	})
 
-	it('accepts Agent without description key (explicitly omitted)', () => {
-		const agentNoDescription: Agent = {
-			...baseAgent,
-		}
-		expect('description' in agentNoDescription).toBe(false)
-		expect(agentNoDescription.description).toBeUndefined()
+	it('setDescription to undefined clears it', () => {
+		const agent = createAgent()
+		agent.setDescription('A description')
+		agent.setDescription(undefined)
+		expect(agent.description).toBeUndefined()
 	})
 
-	it('accepts Agent with description explicitly set to undefined', () => {
-		const agentDescriptionUndefined: Agent = {
-			...baseAgent,
-			description: undefined,
-		}
-		expect(agentDescriptionUndefined.description).toBeUndefined()
+	it('setSystemPrompt changes the prompt', () => {
+		const agent = createAgent()
+		agent.setSystemPrompt('New prompt')
+		expect(agent.systemPrompt).toBe('New prompt')
 	})
 
-	it('accepts Agent with description set to empty string', () => {
-		const agentEmptyDescription: Agent = {
-			...baseAgent,
-			description: '',
-		}
-		expect(agentEmptyDescription.description).toBe('')
+	it('addTool adds a tool ID', () => {
+		const agent = createAgent()
+		agent.addTool('readFile')
+		expect(agent.toolIds).toEqual(['readFile'])
 	})
 
-	it('accepts Agent with minimal valid values for all required fields', () => {
-		const minimalAgent: Agent = {
-			id: 'x',
-			name: 'y',
-			systemPrompt: 'z',
-			providerId: 'p',
-			providerOverrides: {},
-			toolIds: [],
-		}
-		expect(minimalAgent.id).toBe('x')
-		expect(minimalAgent.name).toBe('y')
-		expect(minimalAgent.systemPrompt).toBe('z')
-		expect(minimalAgent.providerId).toBe('p')
-		expect(minimalAgent.providerOverrides).toEqual({})
-		expect(minimalAgent.toolIds).toEqual([])
+	it('addTool does not duplicate', () => {
+		const agent = createAgent()
+		agent.addTool('readFile')
+		agent.addTool('readFile')
+		expect(agent.toolIds).toEqual(['readFile'])
+	})
+
+	it('removeTool removes a tool ID', () => {
+		const agent = createAgent()
+		agent.addTool('readFile')
+		agent.addTool('writeFile')
+		agent.removeTool('readFile')
+		expect(agent.toolIds).toEqual(['writeFile'])
+	})
+
+	it('setProviderOverrides replaces overrides', () => {
+		const agent = createAgent()
+		agent.setProviderOverrides({ model: 'gpt-4', timeout: 30000 })
+		expect(agent.providerOverrides).toEqual({
+			model: 'gpt-4',
+			timeout: 30000,
+		})
+	})
+})
+
+describe('Agent — toData', () => {
+	it('returns AgentData with all fields', () => {
+		const agent = new Agent({
+			id: 'agent-1',
+			name: 'Test Agent',
+			description: 'A test agent',
+			systemPrompt: 'You are helpful.',
+			providerId: 'provider-1',
+			providerOverrides: { apiKey: 'key' },
+			toolIds: ['readFile'],
+		})
+
+		const data: AgentData = agent.toData()
+
+		expect(data.id).toBe('agent-1')
+		expect(data.name).toBe('Test Agent')
+		expect(data.description).toBe('A test agent')
+		expect(data.systemPrompt).toBe('You are helpful.')
+		expect(data.providerId).toBe('provider-1')
+		expect(data.providerOverrides).toEqual({ apiKey: 'key' })
+		expect(data.toolIds).toEqual(['readFile'])
+	})
+
+	it('omits description when undefined', () => {
+		const agent = new Agent({
+			name: 'Test Agent',
+			systemPrompt: 'You are helpful.',
+			providerId: 'provider-1',
+		})
+
+		const data = agent.toData()
+
+		expect('description' in data).toBe(false)
+	})
+})
+
+describe('Agent — readonly properties', () => {
+	it('id is readonly at compile time', () => {
+		const agent = new Agent({
+			name: 'A',
+			systemPrompt: 'P',
+			providerId: 'P1',
+		})
+
+		// @ts-expect-error - id is readonly
+		agent.id = 'new-id'
+	})
+
+	it('providerId is readonly at compile time', () => {
+		const agent = new Agent({
+			name: 'A',
+			systemPrompt: 'P',
+			providerId: 'P1',
+		})
+
+		// @ts-expect-error - providerId is readonly
+		agent.providerId = 'new-provider'
 	})
 })

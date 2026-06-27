@@ -1,7 +1,7 @@
 ---
 type: architecture-decision
 slug: two-modes-one-cli
-status: proposed
+status: accepted
 created: 2026-05-21
 last_synced: 
 references: [src/infrastructure/utilities/CLI.ts, src/cli.ts]

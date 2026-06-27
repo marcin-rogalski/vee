@@ -1,4 +1,4 @@
-import type ConversationEntry from '@domain/ConversationEntry'
+import type { ConversationEntry } from '@domain/ConversationEntry'
 import type { ToolDefinition } from './Tool.port'
 
 interface ProviderPort {

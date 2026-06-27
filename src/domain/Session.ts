@@ -60,7 +60,7 @@ export class Session {
 	}
 
 	rename(newName: string): void {
-		this._name = newName ?? ''
+		this._name = newName
 		this._updatedAt = Date.now()
 	}
 

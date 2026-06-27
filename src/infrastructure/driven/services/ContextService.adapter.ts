@@ -1,7 +1,7 @@
 import type ContextRepositoryPort from '@application/ports/ContextRepository.port'
 import type ContextService from '@application/ports/ContextService.port'
-import type Agent from '@domain/Agent'
-import type ConversationEntry from '@domain/ConversationEntry'
+import type { AgentData } from '@domain/Agent'
+import type { ConversationEntry } from '@domain/ConversationEntry'
 
 /** Infrastructure adapter that implements ContextService using ContextRepositoryPort.
  *
@@ -13,7 +13,7 @@ class ContextServiceAdapter implements ContextService {
 	constructor(private readonly repository: ContextRepositoryPort) {}
 
 	async build(
-		agent: Agent,
+		agent: AgentData,
 		sessionId: string,
 	): Promise<Array<ConversationEntry>> {
 		const history = await this.repository.get(sessionId)

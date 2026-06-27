@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: test mocks require any casts */
 import type ProviderPort from '@application/ports/Provider.port'
-import type ConversationEntry from '@domain/ConversationEntry'
+import type { ConversationEntry } from '@domain/ConversationEntry'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import InferTurnUseCase from './InferTurn.usecase'
 

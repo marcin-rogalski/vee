@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import type ContextRepositoryPort from '@application/ports/ContextRepository.port'
-import type ConversationEntry from '@domain/ConversationEntry'
+import type { ConversationEntry } from '@domain/ConversationEntry'
 
 type ContextStore = Record<string, Array<ConversationEntry>>
 

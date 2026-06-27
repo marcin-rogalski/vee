@@ -15,17 +15,17 @@ describe('OpenAIProvider', () => {
 		expect(provider.id).toBe('my-openai')
 	})
 
-	it('has CONFIG_SCHEMA with apiKey and model as required', () => {
+	it('has CONFIG_SCHEMA with model as required', () => {
 		const schema = OpenAIProvider.CONFIG_SCHEMA
 		expect(schema.type).toBe('object')
-		expect(schema.required).toContain('apiKey')
 		expect(schema.required).toContain('model')
-		expect(schema.properties).toHaveProperty('apiKey')
 		expect(schema.properties).toHaveProperty('model')
+		expect(schema.properties).toHaveProperty('apiKey')
+		expect(schema.properties).toHaveProperty('baseUrl')
 		expect(schema.properties).toHaveProperty('temperature')
 	})
 
-	it('has model property with enum values', () => {
+	it('has model property as string without enum restriction', () => {
 		const modelProp = OpenAIProvider.CONFIG_SCHEMA.properties.model
 		if (!modelProp || !isTypedProperty(modelProp)) {
 			throw new Error('Model property not found')
@@ -34,43 +34,43 @@ describe('OpenAIProvider', () => {
 			throw new Error('Expected model to be string type')
 		}
 		expect(modelProp.type).toBe('string')
-		expect(modelProp.enum).toContain('gpt-4o')
-		expect(modelProp.enum).toContain('gpt-4o-mini')
-	})
-
-	it('throws Not implemented on infer', () => {
-		const provider = new OpenAIProvider('p1')
-		expect(() => provider.infer({}, [], []).next()).toThrow('Not implemented')
+		expect(modelProp.enum).toBeUndefined()
 	})
 
 	it('validates correct config against CONFIG_SCHEMA', () => {
 		expect(() =>
+			validateJsonSchema({ model: 'gpt-4o' }, OpenAIProvider.CONFIG_SCHEMA),
+		).not.toThrow()
+	})
+
+	it('validates config with baseUrl for LM Studio', () => {
+		expect(() =>
 			validateJsonSchema(
-				{ apiKey: 'sk-123', model: 'gpt-4o' },
+				{ model: 'llama-3', baseUrl: 'http://localhost:1234' },
 				OpenAIProvider.CONFIG_SCHEMA,
 			),
 		).not.toThrow()
 	})
 
-	it('rejects config missing required apiKey', () => {
+	it('rejects config missing required model', () => {
 		expect(() =>
-			validateJsonSchema({ model: 'gpt-4o' }, OpenAIProvider.CONFIG_SCHEMA),
-		).toThrow(ValidationError)
-	})
-
-	it('rejects config with invalid model enum value', () => {
-		expect(() =>
-			validateJsonSchema(
-				{ apiKey: 'sk-123', model: 'llama-3' },
-				OpenAIProvider.CONFIG_SCHEMA,
-			),
+			validateJsonSchema({ apiKey: 'sk-123' }, OpenAIProvider.CONFIG_SCHEMA),
 		).toThrow(ValidationError)
 	})
 
 	it('accepts config with optional temperature', () => {
 		expect(() =>
 			validateJsonSchema(
-				{ apiKey: 'sk-123', model: 'gpt-4o', temperature: 0.7 },
+				{ model: 'gpt-4o', temperature: 0.7 },
+				OpenAIProvider.CONFIG_SCHEMA,
+			),
+		).not.toThrow()
+	})
+
+	it('accepts config without apiKey (for local LM Studio)', () => {
+		expect(() =>
+			validateJsonSchema(
+				{ model: 'llama-3', baseUrl: 'http://localhost:1234' },
 				OpenAIProvider.CONFIG_SCHEMA,
 			),
 		).not.toThrow()

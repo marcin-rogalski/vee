@@ -12,4 +12,10 @@ export type ConversationEntry = {
 	| { role: 'system'; name: string; content: string }
 )
 
-export default ConversationEntry
+export function isToolResult(
+	entry: ConversationEntry,
+): entry is ConversationEntry & { name: string } {
+	return (
+		entry.role === 'system' && 'name' in entry && typeof entry.name === 'string'
+	)
+}

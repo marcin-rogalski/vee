@@ -69,6 +69,18 @@ describe('UC6 — SessionDelete use case', () => {
 		)
 	})
 
+	it('calls contextRepository.delete(sessionId) to prevent orphaned context', async () => {
+		const contextDeleteSpy = vi.spyOn(mockContextRepository, 'delete')
+		await useCase.execute('session-123')
+		expect(contextDeleteSpy).toHaveBeenCalledWith('session-123')
+	})
+
+	it('calls chatMessageRepository.deleteBySession(sessionId)', async () => {
+		const chatDeleteSpy = vi.spyOn(mockChatMessageRepository, 'deleteBySession')
+		await useCase.execute('session-123')
+		expect(chatDeleteSpy).toHaveBeenCalledWith('session-123')
+	})
+
 	it('calls sessionRepository.delete(id) with correct id', async () => {
 		const deleteSpy = vi.spyOn(mockRepository, 'delete')
 		await useCase.execute('session-123')

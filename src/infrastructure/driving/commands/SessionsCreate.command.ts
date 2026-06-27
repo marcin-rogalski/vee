@@ -11,8 +11,9 @@ export type SessionsCreateCommandDeps = {
 export function createSessionsCreateCommand(
 	deps: SessionsCreateCommandDeps,
 ): Command {
-	const command = new Command('create [name]')
+	const command = new Command('create')
 		.description('Create a new session')
+		.argument('[name]', 'Optional session name')
 		.requiredOption(
 			'--agent <agentId>',
 			'Agent ID to associate with the session',

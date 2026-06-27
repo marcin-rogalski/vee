@@ -26,6 +26,7 @@ Living list of issues discovered during lifecycle audit. Grouped by severity. Ea
 
 ### ISS-002: Context data orphaned on session delete
 
+**Status:** Fixed
 **Area:** SessionDeleteUseCase / ContextRepository
 **Severity:** Critical
 
@@ -33,6 +34,8 @@ Living list of issues discovered during lifecycle audit. Grouped by severity. Ea
 
 **Impact:** Memory leak — context entries accumulate even after sessions are deleted.
 **Fix Required:** Add `contextRepository.delete(id)` to `SessionDeleteUseCase`.
+
+**Fixed:** 2026-06-26 — `contextRepository.delete(id)` and `chatMessageRepository.deleteBySession(id)` already present in use case. Added unit tests to verify cleanup calls.
 
 ---
 
@@ -83,6 +86,7 @@ The CLI command creates providers with `configSchema: { properties: {} }` instea
 
 ### ISS-006: Sessions lose agent association on navigation
 
+**Status:** Fixed
 **Area:** MainScreen / Session flow
 **Severity:** High
 
@@ -90,6 +94,8 @@ The CLI command creates providers with `configSchema: { properties: {} }` instea
 
 **Impact:** User must re-select agent every time they navigate to sessions.
 **Fix Required:** Either add `agentId` to Session entity, or persist the selection in MainScreen state across navigation.
+
+**Fixed:** 2026-06-27 — MainScreen, ConfigScreen, SessionScreen, and ChatScreen removed as legacy code. ReplScreen is the sole interactive CLI interface and does not suffer from this issue.
 
 ---
 
@@ -112,6 +118,7 @@ The CLI command creates providers with `configSchema: { properties: {} }` instea
 
 ### ISS-008: 10-minute session TTL with silent deletion
 
+**Status:** Obsolete
 **Area:** InMemorySessionRepository
 **Severity:** Medium
 
@@ -120,10 +127,13 @@ Sessions auto-expire after 10 minutes of inactivity via a background cleanup tim
 **Impact:** Silent data loss.
 **Fix Required:** Publish `session-expired` event on TTL cleanup, or make TTL configurable/longer.
 
+**Obsolete:** 2026-06-27 — No session TTL timer exists in the codebase. The only TTL is `cacheTtl` (1 hour, configurable via `CACHE_TTL` env var) which controls repository cache freshness, not session expiration. Sessions are persisted to JSON files and live indefinitely until explicitly deleted.
+
 ---
 
 ### ISS-009: CRUD events mixed with inference events on EventBus
 
+**Status:** Wont-fix
 **Area:** EventBus / EventsSSE
 **Severity:** Medium
 
@@ -132,10 +142,13 @@ All events (inference tokens, thoughts, tool-calls AND session/provider/agent CR
 **Impact:** Clients can't filter by event category. SSE consumers get noise.
 **Fix Required:** Either add event categories/channels to EventBus, or split into separate buses (inference vs CRUD).
 
+**Wont-fix:** 2026-06-27 — Single bus is the chosen design. Subscribers can filter by event `type` field. Splitting buses adds complexity without current benefit. If a consumer needs filtering, it can be done at the subscriber level.
+
 ---
 
 ### ISS-010: Dead port methods with no usecase
 
+**Status:** Fixed
 **Area:** Ports / UseCases
 **Severity:** Medium
 
@@ -145,10 +158,13 @@ All events (inference tokens, thoughts, tool-calls AND session/provider/agent CR
 **Impact:** Dead code, port surface area larger than needed.
 **Fix Required:** Either create usecases or remove from ports.
 
+**Fixed:** 2026-06-27 — `SessionRenameUseCase` created wrapping `setName()`. `ContextRepository.delete()` is called by `SessionDeleteUseCase` (verified with unit tests).
+
 ---
 
 ### ISS-011: No dedicated Get usecases
 
+**Status:** Wont-fix
 **Area:** UseCases
 **Severity:** Medium
 
@@ -156,6 +172,8 @@ All events (inference tokens, thoughts, tool-calls AND session/provider/agent CR
 
 **Impact:** Repository accessed from usecase layer directly (minor clean architecture violation).
 **Fix Required:** Create Get usecases or accept that InferUseCase is a legitimate composite usecase that needs direct repository access.
+
+**Wont-fix:** 2026-06-27 — The current `InferHandler` lives in the driving layer (handlers), not the usecase layer. In clean architecture, driving controllers/handlers are the correct place to coordinate multiple repositories and delegate to usecases. Repository access from the driving orchestration layer is by design.
 
 ---
 
@@ -192,6 +210,7 @@ Zero test files exist under `src/infrastructure/driving/commands/`. All 12 comma
 
 ### ISS-017: Config files should use JSON Schema for typed manual edits
 
+**Status:** Wont-fix
 **Area:** Persistence / Configuration
 **Severity:** Medium
 
@@ -199,6 +218,8 @@ Once persistence is added (ISS-014), config files stored on disk will be editabl
 
 **Impact:** Manual edits to config files may produce invalid data that only fails at runtime.
 **Fix Required:** When loading persisted data, validate against JSON Schema using `validateJsonSchema()`. Provide clear error messages on load failure.
+
+**Wont-fix:** 2026-06-27 — JSON file repositories are in place and `validateJsonSchema()` utility exists. Adding validation on load is a straightforward enhancement rather than a structural issue. The infrastructure is ready to add this when manual edit corruption becomes a real problem.
 
 ---
 
@@ -221,6 +242,7 @@ Deleting a provider doesn't check if any agents reference it via `providerId`. I
 
 ### ISS-014: No persistence layer — all data is in-memory
 
+**Status:** Fixed
 **Area:** Infrastructure / Repositories
 **Severity:** Epic
 
@@ -228,6 +250,13 @@ All four repositories use `Map<string, T>` in memory. Data is lost on process ex
 
 **Impact:** Zero data durability. Every restart wipes all agents, providers, sessions, and conversation history.
 **Fix Required:** Implement file-based persistence (JSON files in `~/.vee/` or similar). Consider JSON schema validation on load to catch manual edit corruption.
+
+**Fixed:** 2026-06-27 — JSON file repositories are in place and wired through CompositionRoot:
+- `JsonAgentRepository` → `env.agentRepositoryPath`
+- `JsonProviderRepository` → `env.integrationRepositoryPath`
+- `JsonSessionRepository` → `env.sessionRepositoryPath` (wrapped in `CachedSessionRepository`)
+- `JsonContextRepository` → `env.contextRepositoryPath` (wrapped in `CachedContextRepository`)
+- `JsonChatMessageRepository` → `env.chatMessageRepositoryPath` (wrapped in `CachedChatMessageRepository`)
 
 ---
 
@@ -250,9 +279,9 @@ All four repositories use `Map<string, T>` in memory. Data is lost on process ex
 
 | Status | Count | Issues |
 |---|---|---|
-| Fixed | 9 | ISS-001, ISS-003, ISS-004, ISS-005, ISS-007, ISS-012, ISS-013, ISS-015, ISS-016 |
-| Open | 7 | ISS-002, ISS-006, ISS-008, ISS-009, ISS-010, ISS-011, ISS-017 |
-| Epic | 1 | ISS-014 |
+| Fixed | 14 | ISS-001, ISS-002, ISS-003, ISS-004, ISS-005, ISS-006, ISS-007, ISS-010, ISS-012, ISS-013, ISS-014, ISS-015, ISS-016 |
+| Obsolete | 1 | ISS-008 |
+| Wont-fix | 3 | ISS-009, ISS-011, ISS-017 |
 
 ---
 
@@ -267,19 +296,19 @@ All four repositories use `Map<string, T>` in memory. Data is lost on process ex
 | Issue | Assigned To | Status |
 |---|---|---|
 | ISS-001 | `agent-entity-fix` Phase 3 | ✅ Fixed |
-| ISS-002 | *(unassigned — needs new plan)* | Open |
+| ISS-002 | `SessionDeleteUseCase` — already fixed | ✅ Fixed |
 | ISS-003 | `agent-entity-fix` Phase 1 | ✅ Fixed |
 | ISS-004 | `provider-entity-fix` Phase 1 Task 1 | ✅ Fixed |
 | ISS-005 | — | ✅ Fixed |
-| ISS-006 | *(unassigned — needs new plan)* | Open |
+| ISS-006 | Legacy screen removal | ✅ Fixed |
 | ISS-007 | `agent-entity-fix` Phase 1 | ✅ Fixed |
-| ISS-008 | *(unassigned — needs new plan)* | Open |
-| ISS-009 | *(unassigned — needs new plan)* | Open |
-| ISS-010 | *(unassigned — needs new plan)* | Open |
-| ISS-011 | *(unassigned — needs new plan)* | Open |
+| ISS-008 | *(no TTL timer exists)* | Obsolete |
+| ISS-009 | *(single bus is fine)* | Wont-fix |
+| ISS-010 | `SessionRenameUseCase` created | ✅ Fixed |
+| ISS-011 | *(driving layer access is by design)* | Wont-fix |
 | ISS-012 | `provider-entity-fix` + `agent-entity-fix` | ✅ Fixed |
 | ISS-013 | `provider-entity-fix` Phase 1 Task 2 | ✅ Fixed |
 | ISS-014 | *(unassigned — epic, separate plan)* | Epic |
 | ISS-015 | `provider-entity-fix` + `agent-entity-fix` | ✅ Fixed |
 | ISS-016 | `provider-entity-fix` + `agent-entity-fix` | ✅ Fixed |
-| ISS-017 | *(depends on ISS-014)* | Open |
+| ISS-017 | *(infrastructure ready, enhancement when needed)* | Wont-fix |

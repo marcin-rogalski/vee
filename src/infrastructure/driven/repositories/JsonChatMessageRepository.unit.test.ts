@@ -1,9 +1,17 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type LoggerPort from '@application/ports/Logger.port'
 import type { ChatMessage } from '@domain/ChatMessage'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import JsonChatMessageRepository from './JsonChatMessageRepository'
+
+const noopLogger: LoggerPort = {
+	info: () => {},
+	warn: () => {},
+	error: () => {},
+	debug: () => {},
+}
 
 describe('JsonChatMessageRepository', () => {
 	let tmpDir: string
@@ -11,7 +19,10 @@ describe('JsonChatMessageRepository', () => {
 
 	beforeEach(async () => {
 		tmpDir = await mkdtemp(join(tmpdir(), 'vee-test-'))
-		repo = new JsonChatMessageRepository(join(tmpDir, 'chat-messages.json'))
+		repo = new JsonChatMessageRepository(
+			join(tmpDir, 'chat-messages.json'),
+			noopLogger,
+		)
 	})
 
 	afterEach(async () => {
@@ -89,5 +100,38 @@ describe('JsonChatMessageRepository', () => {
 
 		const result2 = await repo.getBySession('session-2')
 		expect(result2).toHaveLength(1)
+	})
+
+	it('get() returns message by id', async () => {
+		const message: ChatMessage = {
+			id: 'msg-1',
+			sessionId: 'session-1',
+			role: 'user',
+			content: 'Hello',
+			ts: Date.now(),
+		}
+		await repo.create(message)
+
+		const result = await repo.get('msg-1')
+		expect(result.id).toBe('msg-1')
+		expect(result.content).toBe('Hello')
+	})
+
+	it('get() throws NotFoundError for unknown id', async () => {
+		await expect(repo.get('nonexistent')).rejects.toThrow()
+	})
+
+	it('delete() removes message by id', async () => {
+		const message: ChatMessage = {
+			id: 'msg-1',
+			sessionId: 'session-1',
+			role: 'user',
+			content: 'Hello',
+			ts: Date.now(),
+		}
+		await repo.create(message)
+		await repo.delete('msg-1')
+
+		await expect(repo.get('msg-1')).rejects.toThrow()
 	})
 })

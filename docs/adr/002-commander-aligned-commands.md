@@ -1,7 +1,7 @@
 ---
 type: architecture-decision
 slug: commander-aligned-commands
-status: proposed
+status: accepted
 created: 2026-05-21
 last_synced: 
 references: [src/infrastructure/driving/commands/]

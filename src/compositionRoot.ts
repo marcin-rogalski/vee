@@ -13,7 +13,6 @@ import AgentListUseCase from '@application/usecases/AgentList.usecase'
 import AgentUpsertUseCase from '@application/usecases/AgentUpsert.usecase'
 import BuildContextUseCase from '@application/usecases/BuildContext.usecase'
 import ExecuteToolsUseCase from '@application/usecases/ExecuteTools.usecase'
-import InferOrchestratorUseCase from '@application/usecases/InferOrchestrator.usecase'
 import InferTurnUseCase from '@application/usecases/InferTurn.usecase'
 import ProviderDeleteUseCase from '@application/usecases/ProviderDelete.usecase'
 import ProviderListUseCase from '@application/usecases/ProviderList.usecase'
@@ -21,6 +20,7 @@ import ProviderUpsertUseCase from '@application/usecases/ProviderUpsert.usecase'
 import SessionCreateUseCase from '@application/usecases/SessionCreate.usecase'
 import SessionDeleteUseCase from '@application/usecases/SessionDelete.usecase'
 import SessionListUseCase from '@application/usecases/SessionList.usecase'
+import SessionRenameUseCase from '@application/usecases/SessionRename.usecase'
 import OpenAIProvider from '@infrastructure/driven/providers/OpenAIProvider'
 import ProviderRegistry from '@infrastructure/driven/registries/ProviderRegistry'
 import ToolRegistry from '@infrastructure/driven/registries/ToolRegistry'
@@ -35,6 +35,7 @@ import JsonSessionRepository from '@infrastructure/driven/repositories/JsonSessi
 import ChatMessageServiceAdapter from '@infrastructure/driven/services/ChatMessageService.adapter'
 import ContextServiceAdapter from '@infrastructure/driven/services/ContextService.adapter'
 import SchemaValidationServiceAdapter from '@infrastructure/driven/services/SchemaValidationService.adapter'
+import InferHandler from '@infrastructure/driving/handlers/InferHandler'
 import ConsoleLogger from '@infrastructure/utilities/ConsoleLogger.adapter'
 import InMemoryEventBus from '@infrastructure/utilities/InMemoryEventBus'
 import NodeEnvironment from '@infrastructure/utilities/NodeEnvironment.adapter'
@@ -60,18 +61,20 @@ interface CompositionRoot {
 	sessionCreate: InstanceType<typeof SessionCreateUseCase>
 	sessionList: InstanceType<typeof SessionListUseCase>
 	sessionDelete: InstanceType<typeof SessionDeleteUseCase>
-	infer: InstanceType<typeof InferOrchestratorUseCase>
+	sessionRename: InstanceType<typeof SessionRenameUseCase>
+	infer: InferHandler
 }
 
 const logger = new ConsoleLogger()
 const env = new NodeEnvironment(logger)
-const agentRepository = new JsonAgentRepository(env.agentRepositoryPath)
+const agentRepository = new JsonAgentRepository(env.agentRepositoryPath, logger)
 const providerRepository = new JsonProviderRepository(
 	env.integrationRepositoryPath,
+	logger,
 )
 
 const sessionRepository = new CachedSessionRepository(
-	new JsonSessionRepository(env.sessionRepositoryPath),
+	new JsonSessionRepository(env.sessionRepositoryPath, logger),
 	env.cacheTtl,
 )
 const contextRepository = new CachedContextRepository(
@@ -79,7 +82,7 @@ const contextRepository = new CachedContextRepository(
 	env.cacheTtl,
 )
 const chatMessageRepository = new CachedChatMessageRepository(
-	new JsonChatMessageRepository(env.chatMessageRepositoryPath),
+	new JsonChatMessageRepository(env.chatMessageRepositoryPath, logger),
 	env.cacheTtl,
 )
 const toolRegistry = new ToolRegistry()
@@ -139,7 +142,8 @@ const compositionRoot: CompositionRoot = {
 		chatMessageRepository,
 		eventBus,
 	),
-	infer: new InferOrchestratorUseCase(
+	sessionRename: new SessionRenameUseCase(sessionRepository, eventBus),
+	infer: new InferHandler(
 		agentRepository,
 		providerRepository,
 		providerRegistry,
@@ -149,7 +153,7 @@ const compositionRoot: CompositionRoot = {
 		eventBus,
 		buildContextUseCase,
 		new ExecuteToolsUseCase(),
-		(provider) => new InferTurnUseCase(provider),
+		(provider) => new InferTurnUseCase(provider, eventBus),
 	),
 }
 

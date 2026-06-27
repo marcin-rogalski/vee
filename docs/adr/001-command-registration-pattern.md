@@ -1,7 +1,7 @@
 ---
 type: architecture-decision
 slug: command-registration-pattern
-status: proposed
+status: accepted
 created: 2026-05-21
 last_synced: 
 references: [src/cli.ts, src/infrastructure/utilities/CLI.ts]

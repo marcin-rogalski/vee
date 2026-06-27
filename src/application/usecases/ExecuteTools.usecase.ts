@@ -1,4 +1,4 @@
-import type ConversationEntry from '@domain/ConversationEntry'
+import type { ConversationEntry } from '@domain/ConversationEntry'
 import type ToolPort from '../ports/Tool.port'
 
 /** Execute a batch of tool calls and return results in order.

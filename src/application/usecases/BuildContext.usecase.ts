@@ -1,5 +1,5 @@
-import type Agent from '@domain/Agent'
-import type ConversationEntry from '@domain/ConversationEntry'
+import type { AgentData } from '@domain/Agent'
+import type { ConversationEntry } from '@domain/ConversationEntry'
 import type ContextService from '../ports/ContextService.port'
 
 /** Build context for inference: system prompt + conversation history.
@@ -11,7 +11,7 @@ class BuildContextUseCase {
 	constructor(readonly contextService: ContextService) {}
 
 	async execute(
-		agent: Agent,
+		agent: AgentData,
 		sessionId: string,
 	): Promise<Array<ConversationEntry>> {
 		return this.contextService.build(agent, sessionId)

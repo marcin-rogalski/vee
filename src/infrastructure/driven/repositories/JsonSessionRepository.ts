@@ -1,3 +1,4 @@
+import type LoggerPort from '@application/ports/Logger.port'
 import type SessionRepositoryPort from '@application/ports/SessionRepository.port'
 import { NotFoundError } from '@domain/errors'
 import Session, { type SessionData } from '@domain/Session'
@@ -10,8 +11,8 @@ class JsonSessionRepository
 	>
 	implements SessionRepositoryPort
 {
-	constructor(filePath: string) {
-		super(filePath, 'Session', NotFoundError)
+	constructor(filePath: string, logger: LoggerPort) {
+		super(filePath, 'Session', NotFoundError, logger)
 	}
 
 	validateItem(item: unknown): boolean {
@@ -36,7 +37,7 @@ class JsonSessionRepository
 		return data
 	}
 
-	async list(): Promise<Array<Pick<Session, 'id' | 'name' | 'agentId'>>> {
+	async list(): Promise<Array<Pick<SessionData, 'id' | 'name' | 'agentId'>>> {
 		const sessions = await this.read()
 		return sessions.map((session) => ({
 			id: session.id,
@@ -47,7 +48,7 @@ class JsonSessionRepository
 
 	async listByAgentId(
 		agentId: string,
-	): Promise<Array<Pick<Session, 'id' | 'name'>>> {
+	): Promise<Array<Pick<SessionData, 'id' | 'name'>>> {
 		const sessions = await this.read()
 		return sessions
 			.filter((s) => s.agentId === agentId)
@@ -81,11 +82,11 @@ class JsonSessionRepository
 		await this.write(filtered)
 	}
 
-	async save(session: Session): Promise<void> {
+	async save(session: SessionData): Promise<void> {
 		const sessions = await this.read()
-		const existing = sessions.find((s) => s.id === session.id)
-		if (existing) {
-			Object.assign(existing, session)
+		const existingIndex = sessions.findIndex((s) => s.id === session.id)
+		if (existingIndex >= 0) {
+			sessions[existingIndex] = session
 		} else {
 			sessions.push(session)
 		}

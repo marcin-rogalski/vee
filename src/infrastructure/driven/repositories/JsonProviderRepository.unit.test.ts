@@ -1,9 +1,17 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type Provider from '@domain/Provider'
+import type LoggerPort from '@application/ports/Logger.port'
+import type { ProviderData } from '@domain/Provider'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import JsonProviderRepository from './JsonProviderRepository'
+
+const noopLogger: LoggerPort = {
+	info: () => {},
+	warn: () => {},
+	error: () => {},
+	debug: () => {},
+}
 
 describe('JsonProviderRepository', () => {
 	let tmpDir: string
@@ -11,7 +19,10 @@ describe('JsonProviderRepository', () => {
 
 	beforeEach(async () => {
 		tmpDir = await mkdtemp(join(tmpdir(), 'vee-test-'))
-		repo = new JsonProviderRepository(join(tmpDir, 'providers.json'))
+		repo = new JsonProviderRepository(
+			join(tmpDir, 'providers.json'),
+			noopLogger,
+		)
 	})
 
 	afterEach(async () => {
@@ -19,7 +30,7 @@ describe('JsonProviderRepository', () => {
 	})
 
 	it('save() stores provider, get() retrieves it', async () => {
-		const provider: Provider = {
+		const provider: ProviderData = {
 			id: 'p1',
 			name: 'OpenAI',
 			type: 'openai',
@@ -117,7 +128,7 @@ describe('JsonProviderRepository', () => {
 	})
 
 	it('persists data across instances', async () => {
-		const provider: Provider = {
+		const provider: ProviderData = {
 			id: 'p1',
 			name: 'Persistent',
 			type: 'openai',
@@ -130,7 +141,10 @@ describe('JsonProviderRepository', () => {
 		}
 		await repo.save(provider)
 
-		const repo2 = new JsonProviderRepository(join(tmpDir, 'providers.json'))
+		const repo2 = new JsonProviderRepository(
+			join(tmpDir, 'providers.json'),
+			noopLogger,
+		)
 		const retrieved = await repo2.get('p1')
 		expect(retrieved.name).toBe('Persistent')
 	})

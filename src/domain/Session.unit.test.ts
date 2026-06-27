@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { ValidationError } from './errors'
 import Session, { type SessionData } from './Session'
 
-describe('D3 — Session class construction', () => {
+describe('Session construction', () => {
 	it('creates valid Session with name and agentId', () => {
 		const session = new Session({ name: 'Test Session', agentId: 'agent-1' })
 		expect(session.id).toBeDefined()
@@ -67,7 +67,7 @@ describe('D3 — Session class construction', () => {
 	})
 })
 
-describe('D4 — Session validation', () => {
+describe('Session validation', () => {
 	it('throws ValidationError when agentId is missing', () => {
 		expect(
 			() => new Session({ name: 'Test', agentId: '' as unknown as string }),
@@ -87,7 +87,7 @@ describe('D4 — Session validation', () => {
 	})
 })
 
-describe('D5 — Session rename behavior', () => {
+describe('Session rename behavior', () => {
 	it('updates name via rename()', () => {
 		const session = new Session({ name: 'Original', agentId: 'agent-1' })
 		session.rename('Updated')

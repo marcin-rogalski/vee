@@ -1,4 +1,4 @@
-import type ConversationEntry from '@domain/ConversationEntry'
+import type { ConversationEntry } from '@domain/ConversationEntry'
 
 interface ContextRepositoryPort {
 	get(sessionId: string): Promise<Array<ConversationEntry>>
